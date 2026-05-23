@@ -38,10 +38,17 @@ public class VentaService {
     }
 
     @Transactional(readOnly = true)
-    public Page<VentaDTO> listar(Pageable pageable, Long sucursalId) {
-        Page<Venta> page = sucursalId == null
-                ? ventaRepository.findAll(pageable)
-                : ventaRepository.findBySucursal_Id(sucursalId, pageable);
+    public Page<VentaDTO> listar(Pageable pageable, Long sucursalId, LocalDateTime inicio, LocalDateTime fin) {
+        Page<Venta> page;
+        if (inicio != null && fin != null) {
+            page = sucursalId == null
+                    ? ventaRepository.findByFechaBetweenOrderByFechaDesc(inicio, fin, pageable)
+                    : ventaRepository.findBySucursal_IdAndFechaBetweenOrderByFechaDesc(sucursalId, inicio, fin, pageable);
+        } else {
+            page = sucursalId == null
+                    ? ventaRepository.findAllByOrderByFechaDesc(pageable)
+                    : ventaRepository.findBySucursal_IdOrderByFechaDesc(sucursalId, pageable);
+        }
         return page.map(VentaMapper::toDto);
     }
 

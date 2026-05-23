@@ -22,6 +22,9 @@ public final class VentaMapper {
         if (d.getProducto() != null) {
             dto.setProductoId(d.getProducto().getId());
             dto.setNombreProd(d.getProducto().getNombre());
+            if (d.getProducto().getCategoria() != null) {
+                dto.setCategoriaProd(d.getProducto().getCategoria().getNombre());
+            }
         }
         return dto;
     }

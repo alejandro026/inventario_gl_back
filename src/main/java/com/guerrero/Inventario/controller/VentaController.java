@@ -35,8 +35,10 @@ public class VentaController {
     @Operation(summary = "Listar ventas (paginado)")
     public Page<VentaDTO> listar(
             @ParameterObject @PageableDefault(size = 20, sort = "fecha") Pageable pageable,
-            @Parameter(description = "Filtrar por id de sucursal") @RequestParam(required = false) Long sucursalId) {
-        return service.listar(pageable, sucursalId);
+            @Parameter(description = "Filtrar por id de sucursal") @RequestParam(required = false) Long sucursalId,
+            @Parameter(description = "Fecha de inicio") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @Parameter(description = "Fecha de fin") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+        return service.listar(pageable, sucursalId, inicio, fin);
     }
 
     @GetMapping("/{id}")

@@ -12,7 +12,14 @@ import java.util.List;
 
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
-    Page<Venta> findBySucursal_Id(Long sucursalId, Pageable pageable);
+    Page<Venta> findBySucursal_IdOrderByFechaDesc(Long sucursalId, Pageable pageable);
+
+    Page<Venta> findAllByOrderByFechaDesc(Pageable pageable);
+
+
+    Page<Venta> findByFechaBetweenOrderByFechaDesc(LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+
+    Page<Venta> findBySucursal_IdAndFechaBetweenOrderByFechaDesc(Long sucursalId, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
 
     @Query("SELECT v FROM Venta v WHERE v.fecha BETWEEN :inicio AND :fin")
     List<Venta> findByFechaBetween(@Param("inicio") LocalDateTime inicio,

@@ -34,4 +34,7 @@ public class DetalleVentaDTO {
 
     @Schema(description = "Subtotal (calculado por el backend)", example = "91.00")
     private Double subtotal;
+
+    @Schema(description = "Nombre de la categoría del producto (solo respuesta)", example = "PAPELERIA")
+    private String categoriaProd;
 }
