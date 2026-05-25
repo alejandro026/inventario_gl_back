@@ -35,11 +35,14 @@ public class ReporteFinanceController {
             
             @Parameter(description = "Fecha de fin del rango (por defecto fecha/hora actual)")
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin,
+            
+            @Parameter(description = "ID de la categoría para filtrar (opcional)")
+            @RequestParam(required = false) Long categoriaId) {
 
         LocalDateTime start = inicio != null ? inicio : LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime end = fin != null ? fin : LocalDateTime.now();
 
-        return financeService.obtenerMétricasFinancieras(start, end);
+        return financeService.obtenerMétricasFinancieras(start, end, categoriaId);
     }
 }

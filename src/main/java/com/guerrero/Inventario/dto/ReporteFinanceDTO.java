@@ -33,6 +33,9 @@ public class ReporteFinanceDTO {
     @Schema(description = "Ranking de productos con mejor rendimiento")
     private List<ProductoRanking> rankingProductos;
 
+    @Schema(description = "Resumen de rendimiento financiero por categorías")
+    private List<CategoriaGanancia> rendimientoCategorias;
+
     @Getter
     @Setter
     @AllArgsConstructor
@@ -41,6 +44,19 @@ public class ReporteFinanceDTO {
         private Long productoId;
         private String nombre;
         private Integer cantidadVendida;
+        private Double totalIngresos;
+        private Double totalCosto;
+        private Double totalGanancia;
+        private Double margenUtilidad;
+    }
+
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CategoriaGanancia {
+        private Long categoriaId;
+        private String nombre;
         private Double totalIngresos;
         private Double totalCosto;
         private Double totalGanancia;
