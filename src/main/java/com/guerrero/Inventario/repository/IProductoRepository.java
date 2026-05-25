@@ -16,9 +16,13 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
 
     boolean existsByNombreIgnoreCase(String nombre);
 
+    boolean existsByCodigoIgnoreCase(String codigo);
+
     Page<Producto> findByCategoria_Id(Long categoriaId, Pageable pageable);
 
     Page<Producto> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
+
+    Page<Producto> findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(String nombre, String codigo, Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE p.stockMinimo IS NOT NULL AND p.cantidad <= p.stockMinimo")
     List<Producto> findProductosBajoStock();

@@ -17,6 +17,10 @@ public class ProductoDTO {
     @Schema(description = "Id (solo en respuestas)", example = "1")
     private Long id;
 
+    @Size(max = 50, message = "El código no puede superar los 50 caracteres")
+    @Schema(description = "Código de barras o código único de producto", example = "7501055312345")
+    private String codigo;
+
     @NotBlank(message = "El nombre es obligatorio")
     @Size(max = 120)
     @Schema(example = "Cuaderno profesional 100 hojas")
@@ -30,6 +34,11 @@ public class ProductoDTO {
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
     @Schema(example = "45.50")
     private Double precio;
+
+    @NotNull(message = "El precio de compra es obligatorio")
+    @DecimalMin(value = "0.0", message = "El precio de compra no puede ser negativo")
+    @Schema(example = "25.00")
+    private Double precioCompra;
 
     @NotNull(message = "La cantidad es obligatoria")
     @Min(value = 0, message = "La cantidad no puede ser negativa")

@@ -18,6 +18,7 @@ public final class VentaMapper {
         dto.setId(d.getId());
         dto.setCantProd(d.getCantProd());
         dto.setPrecio(d.getPrecio());
+        dto.setPrecioCompra(d.getPrecioCompra() != null ? d.getPrecioCompra() : (d.getProducto() != null && d.getProducto().getPrecioCompra() != null ? d.getProducto().getPrecioCompra() : 0.0));
         dto.setSubtotal(d.getSubtotal());
         if (d.getProducto() != null) {
             dto.setProductoId(d.getProducto().getId());

@@ -32,6 +32,9 @@ public class DetalleVentaDTO {
     @Schema(description = "Precio unitario (calculado por el backend)", example = "45.50")
     private Double precio;
 
+    @Schema(description = "Precio de compra unitario (calculado por el backend)", example = "25.00")
+    private Double precioCompra;
+
     @Schema(description = "Subtotal (calculado por el backend)", example = "91.00")
     private Double subtotal;
 

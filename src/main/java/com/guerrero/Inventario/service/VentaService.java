@@ -104,6 +104,7 @@ public class VentaService {
             detalle.setProducto(producto);
             detalle.setCantProd(cantidad);
             detalle.setPrecio(producto.getPrecio());
+            detalle.setPrecioCompra(producto.getPrecioCompra() != null ? producto.getPrecioCompra() : 0.0);
             double subtotal = producto.getPrecio() * cantidad;
             detalle.setSubtotal(subtotal);
             venta.getDetalle().add(detalle);

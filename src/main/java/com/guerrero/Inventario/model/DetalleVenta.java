@@ -34,6 +34,9 @@ public class DetalleVenta {
     @Column(nullable = false)
     private Double precio;
 
+    @Column(name = "precio_compra")
+    private Double precioCompra;
+
     @Column(nullable = false)
     private Double subtotal;
 }

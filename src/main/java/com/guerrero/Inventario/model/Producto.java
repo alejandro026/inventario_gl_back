@@ -18,6 +18,9 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "codigo", length = 50, unique = true)
+    private String codigo;
+
     @Column(nullable = false, length = 120)
     private String nombre;
 
@@ -26,6 +29,9 @@ public class Producto {
 
     @Column(nullable = false)
     private Double precio;
+
+    @Column(name = "precio_compra", nullable = false)
+    private Double precioCompra = 0.0;
 
     @Column(nullable = false)
     private Integer cantidad;

@@ -36,7 +36,7 @@ public class ProductoService {
         if (categoriaId != null) {
             page = productoRepository.findByCategoria_Id(categoriaId, pageable);
         } else if (buscar != null && !buscar.isBlank()) {
-            page = productoRepository.findByNombreContainingIgnoreCase(buscar, pageable);
+            page = productoRepository.findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(buscar, buscar, pageable);
         } else {
             page = productoRepository.findAll(pageable);
         }
@@ -59,6 +59,10 @@ public class ProductoService {
         if (productoRepository.existsByNombreIgnoreCase(dto.getNombre())) {
             throw new DuplicateResourceException("Ya existe un producto con nombre " + dto.getNombre());
         }
+        if (dto.getCodigo() != null && !dto.getCodigo().isBlank() 
+                && productoRepository.existsByCodigoIgnoreCase(dto.getCodigo())) {
+            throw new DuplicateResourceException("Ya existe un producto con el código " + dto.getCodigo());
+        }
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria", dto.getCategoriaId()));
         Producto entity = ProductoMapper.toEntity(dto, categoria);
@@ -72,11 +76,21 @@ public class ProductoService {
                 && productoRepository.existsByNombreIgnoreCase(dto.getNombre())) {
             throw new DuplicateResourceException("Ya existe otro producto con nombre " + dto.getNombre());
         }
+        if (dto.getCodigo() != null && !dto.getCodigo().isBlank()) {
+            if ((p.getCodigo() == null || !p.getCodigo().equalsIgnoreCase(dto.getCodigo()))
+                    && productoRepository.existsByCodigoIgnoreCase(dto.getCodigo())) {
+                throw new DuplicateResourceException("Ya existe otro producto con el código " + dto.getCodigo());
+            }
+            p.setCodigo(dto.getCodigo());
+        } else {
+            p.setCodigo(null);
+        }
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria", dto.getCategoriaId()));
         p.setNombre(dto.getNombre());
         p.setDescripcion(dto.getDescripcion());
         p.setPrecio(dto.getPrecio());
+        p.setPrecioCompra(dto.getPrecioCompra() == null ? 0.0 : dto.getPrecioCompra());
         p.setCantidad(dto.getCantidad());
         p.setStockMinimo(dto.getStockMinimo());
         p.setActivo(dto.getActivo() == null ? p.getActivo() : dto.getActivo());

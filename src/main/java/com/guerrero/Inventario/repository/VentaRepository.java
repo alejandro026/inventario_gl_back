@@ -25,6 +25,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findByFechaBetween(@Param("inicio") LocalDateTime inicio,
                                    @Param("fin") LocalDateTime fin);
 
+    @Query("SELECT v FROM Venta v WHERE v.estado = com.guerrero.Inventario.model.Venta.EstadoVenta.COMPLETADA AND v.fecha BETWEEN :inicio AND :fin")
+    List<Venta> findCompletedSalesBetween(@Param("inicio") LocalDateTime inicio,
+                                          @Param("fin") LocalDateTime fin);
+
     @Query("SELECT COALESCE(SUM(v.total), 0) FROM Venta v " +
             "WHERE v.estado = com.guerrero.Inventario.model.Venta.EstadoVenta.COMPLETADA " +
             "AND v.fecha BETWEEN :inicio AND :fin")
