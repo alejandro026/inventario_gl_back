@@ -58,4 +58,7 @@ public class ProductoDTO {
 
     @Schema(description = "Nombre de la categoria (solo en respuestas)", example = "PAPELERIA")
     private String categoriaNombre;
+
+    @Schema(description = "Indica si el producto requiere control de stock e inventario", example = "true")
+    private Boolean controlaStock;
 }

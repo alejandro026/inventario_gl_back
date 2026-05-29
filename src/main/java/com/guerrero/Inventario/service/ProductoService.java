@@ -94,6 +94,7 @@ public class ProductoService {
         p.setCantidad(dto.getCantidad());
         p.setStockMinimo(dto.getStockMinimo());
         p.setActivo(dto.getActivo() == null ? p.getActivo() : dto.getActivo());
+        p.setControlaStock(dto.getControlaStock() == null ? Boolean.TRUE : dto.getControlaStock());
         p.setCategoria(categoria);
         return ProductoMapper.toDto(productoRepository.save(p));
     }

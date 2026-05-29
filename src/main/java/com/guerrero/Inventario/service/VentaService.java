@@ -92,6 +92,7 @@ public class VentaService {
                         + producto.getNombre());
             }
             if (venta.getEstado() == Venta.EstadoVenta.COMPLETADA
+                    && Boolean.TRUE.equals(producto.getControlaStock())
                     && producto.getCantidad() < cantidad) {
                 throw new InsufficientStockException(
                         "Stock insuficiente para '" + producto.getNombre()
@@ -110,7 +111,7 @@ public class VentaService {
             venta.getDetalle().add(detalle);
             total += subtotal;
 
-            if (venta.getEstado() == Venta.EstadoVenta.COMPLETADA) {
+            if (venta.getEstado() == Venta.EstadoVenta.COMPLETADA && Boolean.TRUE.equals(producto.getControlaStock())) {
                 producto.setCantidad(producto.getCantidad() - cantidad);
             }
         }
@@ -129,7 +130,9 @@ public class VentaService {
         if (v.getEstado() == Venta.EstadoVenta.COMPLETADA) {
             for (DetalleVenta d : v.getDetalle()) {
                 Producto p = d.getProducto();
-                p.setCantidad(p.getCantidad() + d.getCantProd());
+                if (p != null && Boolean.TRUE.equals(p.getControlaStock())) {
+                    p.setCantidad(p.getCantidad() + d.getCantProd());
+                }
             }
         }
         v.setEstado(Venta.EstadoVenta.CANCELADA);

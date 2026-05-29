@@ -42,6 +42,9 @@ public class Producto {
     @Column(nullable = false)
     private Boolean activo = Boolean.TRUE;
 
+    @Column(name = "controla_stock", nullable = false)
+    private Boolean controlaStock = Boolean.TRUE;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "categoria_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_producto_categoria"))

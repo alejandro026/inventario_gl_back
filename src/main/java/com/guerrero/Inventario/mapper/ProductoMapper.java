@@ -20,6 +20,7 @@ public final class ProductoMapper {
         dto.setCantidad(p.getCantidad());
         dto.setStockMinimo(p.getStockMinimo());
         dto.setActivo(p.getActivo());
+        dto.setControlaStock(p.getControlaStock() == null ? Boolean.TRUE : p.getControlaStock());
         if (p.getCategoria() != null) {
             dto.setCategoriaId(p.getCategoria().getId());
             dto.setCategoriaNombre(p.getCategoria().getNombre());
@@ -39,6 +40,7 @@ public final class ProductoMapper {
         p.setCantidad(dto.getCantidad());
         p.setStockMinimo(dto.getStockMinimo());
         p.setActivo(dto.getActivo() == null ? Boolean.TRUE : dto.getActivo());
+        p.setControlaStock(dto.getControlaStock() == null ? Boolean.TRUE : dto.getControlaStock());
         p.setCategoria(categoria);
         return p;
     }
