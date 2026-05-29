@@ -1,25 +1,18 @@
-# ---- PASO 1: Compilar la aplicación ----
+# Paso 1: Compilación usando una imagen de Maven con Java 17 o 21 (ajusta según tu versión)
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
-
-# Copiamos el archivo de configuración de Maven
+# Copiar archivos de configuración de Maven y código fuente
 COPY pom.xml .
-
-# Copiamos el código fuente de tu API de Spring Boot
 COPY src ./src
-
-# Compilamos y generamos el archivo .jar (omitiendo pruebas para evitar fallos de conexión)
+# Compilar y empaquetar omitiendo los tests para acelerar el despliegue
 RUN mvn clean package -DskipTests
 
-# ---- PASO 2: Crear la imagen ligera de ejecución ----
+# Paso 2: Imagen final para ejecutar la aplicación
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-
-# Copiamos el .jar generado en el paso anterior y lo renombramos a app.jar
+# Copiar el .jar compilado en el Paso 1
 COPY --from=build /app/target/*.jar app.jar
-
-# Exponemos el puerto 80 que es el que te pide Seenode obligatoriamente
-EXPOSE 80
-
-# Arrancamos Spring Boot forzando el puerto 80 mediante el parámetro de entorno
-ENTRYPOINT ["java", "-jar", "app.jar", "--server.port=80"]
+# Exponer el puerto por defecto
+EXPOSE 8080
+# Comando de arranque
+ENTRYPOINT ["java", "-jar", "app.jar"]
