@@ -24,7 +24,7 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
 
     Page<Producto> findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(String nombre, String codigo, Pageable pageable);
 
-    @Query("SELECT p FROM Producto p WHERE p.stockMinimo IS NOT NULL AND p.cantidad <= p.stockMinimo")
+    @Query("SELECT p FROM Producto p WHERE p.stockMinimo IS NOT NULL AND p.controlaStock=true AND p.cantidad <= p.stockMinimo")
     List<Producto> findProductosBajoStock();
 
     @Query("SELECT p FROM Producto p WHERE p.categoria.nombre = :nombreCategoria")

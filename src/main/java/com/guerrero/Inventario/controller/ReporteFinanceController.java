@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/reportes/finanzas")
-@PreAuthorize("hasRole('ADMIN')")
+//@PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Finanzas", description = "Reportes financieros y ganancias del negocio (ADMIN)")
 public class ReporteFinanceController {
 
