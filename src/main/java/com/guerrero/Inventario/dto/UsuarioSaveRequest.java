@@ -44,4 +44,7 @@ public class UsuarioSaveRequest {
     @NotNull(message = "El estado de activo es obligatorio")
     @Schema(example = "true")
     private Boolean activo;
+
+    @Schema(example = "1", description = "ID de la sucursal asignada")
+    private Long sucursalId;
 }

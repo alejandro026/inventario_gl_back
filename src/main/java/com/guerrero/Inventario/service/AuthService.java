@@ -55,6 +55,8 @@ public class AuthService {
                 .username(guardado.getUsername())
                 .rol(guardado.getRol().name())
                 .expiresIn(jwtService.getExpirationMs())
+                .sucursalId(guardado.getSucursal() != null ? guardado.getSucursal().getId() : null)
+                .sucursalNombre(guardado.getSucursal() != null ? guardado.getSucursal().getNombre() : null)
                 .build();
     }
 
@@ -70,6 +72,8 @@ public class AuthService {
                 .username(u.getUsername())
                 .rol(u.getRol().name())
                 .expiresIn(jwtService.getExpirationMs())
+                .sucursalId(u.getSucursal() != null ? u.getSucursal().getId() : null)
+                .sucursalNombre(u.getSucursal() != null ? u.getSucursal().getNombre() : null)
                 .build();
     }
 }

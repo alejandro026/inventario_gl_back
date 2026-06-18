@@ -67,13 +67,24 @@ public class VentaService {
     }
 
     public VentaDTO registrar(VentaDTO dto) {
-        Sucursal sucursal = sucursalService.buscar(dto.getIdSucursal());
+        Usuario usuario = usuarioActual();
+        Sucursal sucursal = null;
+
+        if (usuario != null && usuario.getSucursal() != null) {
+            sucursal = usuario.getSucursal();
+        } else if (dto.getIdSucursal() != null) {
+            sucursal = sucursalService.buscar(dto.getIdSucursal());
+        }
+
+        if (sucursal == null) {
+            throw new BusinessException("Debe especificar una sucursal para la venta.");
+        }
 
         Venta venta = new Venta();
         venta.setSucursal(sucursal);
         venta.setFecha(dto.getFecha() != null ? dto.getFecha() : LocalDateTime.now());
         venta.setEstado(parseEstado(dto.getEstado(), Venta.EstadoVenta.COMPLETADA));
-        venta.setUsuario(usuarioActual());
+        venta.setUsuario(usuario);
 
         double total = 0.0;
         List<DetalleVentaDTO> detalles = dto.getDetalle();
@@ -156,10 +167,11 @@ public class VentaService {
     private Usuario usuarioActual() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof Usuario u) {
-                return u;
+            if (principal instanceof Usuario) {
+                return (Usuario) principal;
             }
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails ud) {
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                org.springframework.security.core.userdetails.UserDetails ud = (org.springframework.security.core.userdetails.UserDetails) principal;
                 return usuarioRepository.findByUsername(ud.getUsername()).orElse(null);
             }
         } catch (Exception ignored) {}

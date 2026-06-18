@@ -29,4 +29,10 @@ public class AuthResponse {
 
     @Schema(description = "Tiempo de expiracion en milisegundos", example = "86400000")
     private Long expiresIn;
+
+    @Schema(example = "1")
+    private Long sucursalId;
+
+    @Schema(example = "Sucursal Central")
+    private String sucursalNombre;
 }

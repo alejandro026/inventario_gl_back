@@ -33,13 +33,19 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listar(Pageable pageable, Long categoriaId, String buscar) {
         Page<Producto> page;
-        if (categoriaId != null) {
+        boolean tieneBusqueda = buscar != null && !buscar.isBlank();
+        boolean tieneCategoria = categoriaId != null;
+
+        if (tieneCategoria && tieneBusqueda) {
+            page = productoRepository.buscarPorCategoriaYNombreOCodigo(categoriaId, buscar.trim(), buscar.trim(), pageable);
+        } else if (tieneCategoria) {
             page = productoRepository.findByCategoria_Id(categoriaId, pageable);
-        } else if (buscar != null && !buscar.isBlank()) {
-            page = productoRepository.findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(buscar, buscar, pageable);
+        } else if (tieneBusqueda) {
+            page = productoRepository.findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(buscar.trim(), buscar.trim(), pageable);
         } else {
             page = productoRepository.findAll(pageable);
         }
+
         return page.map(ProductoMapper::toDto);
     }
 

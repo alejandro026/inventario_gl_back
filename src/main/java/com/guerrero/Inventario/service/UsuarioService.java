@@ -5,7 +5,9 @@ import com.guerrero.Inventario.dto.UsuarioSaveRequest;
 import com.guerrero.Inventario.exception.BusinessException;
 import com.guerrero.Inventario.exception.DuplicateResourceException;
 import com.guerrero.Inventario.exception.ResourceNotFoundException;
+import com.guerrero.Inventario.model.Sucursal;
 import com.guerrero.Inventario.model.Usuario;
+import com.guerrero.Inventario.repository.SucursalRepository;
 import com.guerrero.Inventario.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,10 +22,12 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SucursalRepository sucursalRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, SucursalRepository sucursalRepository) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sucursalRepository = sucursalRepository;
     }
 
     @Transactional(readOnly = true)
@@ -55,6 +59,14 @@ public class UsuarioService {
         u.setRol(req.getRol());
         u.setActivo(req.getActivo() != null ? req.getActivo() : Boolean.TRUE);
 
+        if (req.getSucursalId() != null) {
+            Sucursal sucursal = sucursalRepository.findById(req.getSucursalId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sucursal", req.getSucursalId()));
+            u.setSucursal(sucursal);
+        } else {
+            u.setSucursal(null);
+        }
+
         Usuario guardado = usuarioRepository.save(u);
         return mapearADTO(guardado);
     }
@@ -80,6 +92,14 @@ public class UsuarioService {
         u.setEmail(req.getEmail());
         u.setRol(req.getRol());
         u.setActivo(req.getActivo());
+
+        if (req.getSucursalId() != null) {
+            Sucursal sucursal = sucursalRepository.findById(req.getSucursalId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sucursal", req.getSucursalId()));
+            u.setSucursal(sucursal);
+        } else {
+            u.setSucursal(null);
+        }
 
         if (req.getPassword() != null && !req.getPassword().trim().isEmpty()) {
             if (req.getPassword().trim().length() < 6) {
@@ -112,6 +132,10 @@ public class UsuarioService {
         dto.setEmail(u.getEmail());
         dto.setRol(u.getRol());
         dto.setActivo(u.getActivo());
+        if (u.getSucursal() != null) {
+            dto.setSucursalId(u.getSucursal().getId());
+            dto.setSucursalNombre(u.getSucursal().getNombre());
+        }
         return dto;
     }
 }

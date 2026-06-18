@@ -46,39 +46,13 @@ public class Usuario implements UserDetails {
     @Column(nullable = false)
     private Boolean activo = Boolean.TRUE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sucursal_id", nullable = true)
+    private Sucursal sucursal;
+
     // === UserDetails ===
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return Boolean.TRUE.equals(activo);
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return Boolean.TRUE.equals(activo);
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return Boolean.TRUE.equals(activo);
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return Boolean.TRUE.equals(activo);
     }
 }

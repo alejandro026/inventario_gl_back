@@ -30,4 +30,10 @@ public class UsuarioDTO {
 
     @Schema(example = "true")
     private Boolean activo;
+
+    @Schema(example = "1")
+    private Long sucursalId;
+
+    @Schema(example = "Sucursal Central")
+    private String sucursalNombre;
 }
