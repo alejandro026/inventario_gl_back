@@ -22,9 +22,24 @@ public interface IProductoRepository extends JpaRepository<Producto, Long> {
 
     Page<Producto> findByNombreContainingIgnoreCase(String nombre, Pageable pageable);
 
+    @Query(
+            value = "SELECT p FROM Producto p WHERE p.categoria.id = :categoriaId " +
+                    "AND (UPPER(p.nombre) LIKE UPPER(CONCAT('%', :nombre, '%')) " +
+                    "OR UPPER(p.codigo) LIKE UPPER(CONCAT('%', :codigo, '%')))",
+            countQuery = "SELECT COUNT(p) FROM Producto p WHERE p.categoria.id = :categoriaId " +
+                    "AND (UPPER(p.nombre) LIKE UPPER(CONCAT('%', :nombre, '%')) " +
+                    "OR UPPER(p.codigo) LIKE UPPER(CONCAT('%', :codigo, '%')))"
+    )
+    Page<Producto> buscarPorCategoriaYNombreOCodigo(
+            @Param("categoriaId") Long categoriaId,
+            @Param("nombre") String nombre,
+            @Param("codigo") String codigo,
+            Pageable pageable
+    );
     Page<Producto> findByNombreContainingIgnoreCaseOrCodigoContainingIgnoreCase(String nombre, String codigo, Pageable pageable);
 
-    @Query("SELECT p FROM Producto p WHERE p.stockMinimo IS NOT NULL AND p.cantidad <= p.stockMinimo")
+
+    @Query("SELECT p FROM Producto p WHERE p.stockMinimo IS NOT NULL AND p.controlaStock=true AND p.cantidad <= p.stockMinimo")
     List<Producto> findProductosBajoStock();
 
     @Query("SELECT p FROM Producto p WHERE p.categoria.nombre = :nombreCategoria")
