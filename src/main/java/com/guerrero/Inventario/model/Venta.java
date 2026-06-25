@@ -32,6 +32,12 @@ public class Venta {
     @Column(nullable = false)
     private Double total;
 
+    @Column(name = "pago_con")
+    private Double pagoCon;
+
+    @Column(name = "cambio")
+    private Double cambio;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sucursal_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_venta_sucursal"))

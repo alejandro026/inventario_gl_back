@@ -128,6 +128,13 @@ public class VentaService {
         }
 
         venta.setTotal(total);
+        if (dto.getPagoCon() != null && dto.getPagoCon() > 0) {
+            venta.setPagoCon(dto.getPagoCon());
+            venta.setCambio(Math.max(0.0, dto.getPagoCon() - total));
+        } else {
+            venta.setPagoCon(total);
+            venta.setCambio(0.0);
+        }
         Venta guardada = ventaRepository.save(venta);
         return VentaMapper.toDto(guardada);
     }

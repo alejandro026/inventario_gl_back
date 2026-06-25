@@ -41,4 +41,10 @@ public class VentaDTO {
 
     @Schema(description = "Total (calculado por el backend)", example = "182.00")
     private Double total;
+
+    @Schema(description = "Monto pagado por el cliente", example = "200.00")
+    private Double pagoCon;
+
+    @Schema(description = "Cambio devuelto al cliente (calculado por el backend)", example = "18.00")
+    private Double cambio;
 }
