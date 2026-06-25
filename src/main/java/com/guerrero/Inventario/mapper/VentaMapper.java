@@ -37,6 +37,8 @@ public final class VentaMapper {
         dto.setFecha(v.getFecha());
         dto.setEstado(v.getEstado() == null ? null : v.getEstado().name());
         dto.setTotal(v.getTotal());
+        dto.setPagoCon(v.getPagoCon());
+        dto.setCambio(v.getCambio());
         if (v.getSucursal() != null) {
             dto.setIdSucursal(v.getSucursal().getId());
         }
