@@ -9,14 +9,15 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Paso 2: (Alpine)
-FROM eclipse-temurin:17-jre-alpine
+# Paso 2: Ejecución (Cambiado a Jammy para compatibilidad de arquitectura y estabilidad con Java)
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
-# Crear un usuario sin privilegios por seguridad
-RUN addgroup -S spring && adduser -S spring -G spring
+# Crear un usuario del sistema sin privilegios por seguridad (Sintaxis para Ubuntu/Debian)
+RUN groupadd -r spring && useradd -r -g spring spring
 USER spring:spring
 
+# Copiar el archivo JAR generado en el paso de compilación
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
