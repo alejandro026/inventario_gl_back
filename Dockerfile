@@ -1,18 +1,23 @@
-# Paso 1: Compilación usando una imagen de Maven con Java 17 o 21 (ajusta según tu versión)
+# Paso 1: Compilación (Aprovechamos el caché de dependencias)
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
-# Copiar archivos de configuración de Maven y código fuente
+
+# OPTIMIZACIÓN: Copiar solo el pom primero para cachear dependencias de Maven
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
 COPY src ./src
-# Compilar y empaquetar omitiendo los tests para acelerar el despliegue
 RUN mvn clean package -DskipTests
 
-# Paso 2: Imagen final para ejecutar la aplicación
-FROM eclipse-temurin:17-jre-jammy
+# Paso 2: (Alpine)
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-# Copiar el .jar compilado en el Paso 1
+
+# Crear un usuario sin privilegios por seguridad
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
 COPY --from=build /app/target/*.jar app.jar
-# Exponer el puerto por defecto
+
 EXPOSE 8080
-# Comando de arranque
 ENTRYPOINT ["java", "-jar", "app.jar"]

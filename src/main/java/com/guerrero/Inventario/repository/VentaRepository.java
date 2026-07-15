@@ -34,4 +34,10 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
             "AND v.fecha BETWEEN :inicio AND :fin")
     Double totalVendidoEntre(@Param("inicio") LocalDateTime inicio,
                              @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT v FROM Venta v WHERE v.sucursal.id = :sucursalId AND v.usuario.id = :usuarioId AND v.fecha >= :inicio AND v.fecha <= :fin")
+    List<Venta> findSalesInTurn(@Param("sucursalId") Long sucursalId,
+                                @Param("usuarioId") Long usuarioId,
+                                @Param("inicio") LocalDateTime inicio,
+                                @Param("fin") LocalDateTime fin);
 }

@@ -61,4 +61,8 @@ public class ProductoDTO {
 
     @Schema(description = "Indica si el producto requiere control de stock e inventario", example = "true")
     private Boolean controlaStock;
+
+    public void setCodigo(String codigo) {
+        this.codigo = (codigo != null && codigo.isBlank()) ? null : codigo;
+    }
 }
