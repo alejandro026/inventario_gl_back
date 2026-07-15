@@ -57,6 +57,7 @@ public class AuthService {
                 .expiresIn(jwtService.getExpirationMs())
                 .sucursalId(guardado.getSucursal() != null ? guardado.getSucursal().getId() : null)
                 .sucursalNombre(guardado.getSucursal() != null ? guardado.getSucursal().getNombre() : null)
+                .usuarioId(guardado.getId())
                 .build();
     }
 
@@ -74,6 +75,7 @@ public class AuthService {
                 .expiresIn(jwtService.getExpirationMs())
                 .sucursalId(u.getSucursal() != null ? u.getSucursal().getId() : null)
                 .sucursalNombre(u.getSucursal() != null ? u.getSucursal().getNombre() : null)
+                .usuarioId(u.getId())
                 .build();
     }
 }

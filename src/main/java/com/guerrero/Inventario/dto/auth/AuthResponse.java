@@ -35,4 +35,7 @@ public class AuthResponse {
 
     @Schema(example = "Sucursal Central")
     private String sucursalNombre;
+
+    @Schema(example = "1")
+    private Long usuarioId;
 }

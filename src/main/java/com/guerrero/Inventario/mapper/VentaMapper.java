@@ -45,6 +45,13 @@ public final class VentaMapper {
         if (v.getUsuario() != null) {
             dto.setUsuarioNombre(v.getUsuario().getNombre());
         }
+        if (v.getCliente() != null) {
+            dto.setIdCliente(v.getCliente().getId());
+            dto.setClienteNombre(v.getCliente().getNombre());
+        }
+        if (v.getMetodoPago() != null) {
+            dto.setMetodoPago(v.getMetodoPago().name());
+        }
         List<DetalleVentaDTO> detalles = v.getDetalle() == null ? List.of() :
                 v.getDetalle().stream().map(VentaMapper::toDto).collect(Collectors.toList());
         dto.setDetalle(detalles);
