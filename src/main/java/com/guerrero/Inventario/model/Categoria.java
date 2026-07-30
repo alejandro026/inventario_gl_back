@@ -5,6 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -25,4 +29,14 @@ public class Categoria {
 
     @Column(length = 255)
     private String descripcion;
+
+    @CreationTimestamp
+    @Column(name = "fecha_creacion", updatable = false,
+            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL")
+    private LocalDateTime fechaCreacion;
+
+    @UpdateTimestamp
+    @Column(name = "fecha_actualizacion",
+            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL")
+    private LocalDateTime fechaActualizacion;
 }
