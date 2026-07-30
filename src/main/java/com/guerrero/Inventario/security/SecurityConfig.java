@@ -95,7 +95,7 @@ public class SecurityConfig {
                         })
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(rateLimitingFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(rateLimitingFilter, org.springframework.security.web.authentication.logout.LogoutFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
