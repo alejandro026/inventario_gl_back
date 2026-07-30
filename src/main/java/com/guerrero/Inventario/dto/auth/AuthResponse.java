@@ -1,5 +1,6 @@
 package com.guerrero.Inventario.dto.auth;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,9 @@ import lombok.Setter;
 @Builder
 @Schema(description = "Respuesta de autenticacion JWT")
 public class AuthResponse {
+
+    @JsonIgnore
+    private String refreshToken;
 
     @Schema(example = "Bearer")
     private String tokenType;
