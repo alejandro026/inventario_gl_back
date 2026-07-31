@@ -79,7 +79,7 @@ public class AuthController {
                 .httpOnly(true)
                 .secure(secureCookie)
                 .sameSite("Lax")
-                .path("/api/auth") // solo enviado al path de refresco/logout
+                .path("/") // accesible para todos los paths del origen
                 .maxAge(maxAge)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
