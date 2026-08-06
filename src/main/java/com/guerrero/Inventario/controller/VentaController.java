@@ -1,6 +1,7 @@
 package com.guerrero.Inventario.controller;
 
 import com.guerrero.Inventario.dto.VentaDTO;
+import com.guerrero.Inventario.dto.PagedResponse;
 import com.guerrero.Inventario.service.VentaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,12 +34,12 @@ public class VentaController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','EMPLEADO')")
     @Operation(summary = "Listar ventas (paginado)")
-    public Page<VentaDTO> listar(
+    public PagedResponse<VentaDTO> listar(
             @ParameterObject @PageableDefault(size = 20, sort = "fecha") Pageable pageable,
             @Parameter(description = "Filtrar por id de sucursal") @RequestParam(required = false) Long sucursalId,
             @Parameter(description = "Fecha de inicio") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @Parameter(description = "Fecha de fin") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        return service.listar(pageable, sucursalId, inicio, fin);
+        return PagedResponse.from(service.listar(pageable, sucursalId, inicio, fin));
     }
 
     @GetMapping("/{id}")
