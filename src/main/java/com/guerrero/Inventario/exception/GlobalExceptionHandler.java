@@ -103,6 +103,7 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req) {
+        log.warn("Excepción controlada devuelta al cliente. Status: {}, Mensaje: {}, Path: {}", status.value(), message, req.getRequestURI());
         ApiError body = ApiError.builder()
                 .timestamp(LocalDateTime.now())
                 .status(status.value())

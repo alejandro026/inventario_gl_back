@@ -21,6 +21,8 @@ import java.util.List;
 @Transactional
 public class VentaService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(VentaService.class);
+
     private final VentaRepository ventaRepository;
     private final ProductoService productoService;
     private final SucursalService sucursalService;
@@ -78,6 +80,8 @@ public class VentaService {
     }
 
     public VentaDTO registrar(VentaDTO dto) {
+        log.info("Iniciando registro de venta. Sucursal ID: {}, Cliente ID: {}, Método Pago: {}, Total detalles: {}", 
+                dto.getIdSucursal(), dto.getIdCliente(), dto.getMetodoPago(), dto.getDetalle() != null ? dto.getDetalle().size() : 0);
         Usuario usuario = usuarioActual();
         Sucursal sucursal = null;
 
@@ -189,11 +193,14 @@ public class VentaService {
         }
 
         Venta guardada = ventaRepository.save(venta);
+        log.info("Venta ID: {} registrada con éxito. Sucursal ID: {}, Cliente ID: {}, Total: {}, Método Pago: {}", 
+                guardada.getId(), guardada.getSucursal().getId(), guardada.getCliente() != null ? guardada.getCliente().getId() : "Público General", guardada.getTotal(), guardada.getMetodoPago());
 
         // Registrar movimientos en Kardex
         for (DetalleVenta d : guardada.getDetalle()) {
             Producto producto = d.getProducto();
             if (guardada.getEstado() == Venta.EstadoVenta.COMPLETADA && Boolean.TRUE.equals(producto.getControlaStock())) {
+                log.trace("Registrando salida en Kardex para producto ID: {}", producto.getId());
                 kardexService.registrarMovimiento(
                         producto,
                         guardada.getSucursal(),
@@ -221,8 +228,10 @@ public class VentaService {
     }
 
     public VentaDTO cancelar(Long id) {
+        log.info("Procesando cancelación de venta para ID: {}", id);
         Venta v = buscar(id);
         if (v.getEstado() == Venta.EstadoVenta.CANCELADA) {
+            log.warn("Cancelación fallida: La venta ID: {} ya está CANCELADA.", id);
             throw new BusinessException("La venta ya esta cancelada");
         }
         // Reintegrar el stock si la venta estaba completada
@@ -263,7 +272,9 @@ public class VentaService {
         }
 
         v.setEstado(Venta.EstadoVenta.CANCELADA);
-        return VentaMapper.toDto(ventaRepository.save(v));
+        Venta guardada = ventaRepository.save(v);
+        log.info("Venta ID: {} cancelada exitosamente. Se restableció el stock y saldos de cuentas correspondientes.", id);
+        return VentaMapper.toDto(guardada);
     }
 
     public Venta buscar(Long id) {
