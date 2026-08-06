@@ -2,6 +2,10 @@ package com.guerrero.Inventario.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,4 +27,14 @@ public class Sucursal {
 
     @Column(length = 25)
     private String telefono;
+
+    @CreationTimestamp
+    @Column(name = "fecha_creacion", updatable = false,
+            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL")
+    private LocalDateTime fechaCreacion;
+
+    @UpdateTimestamp
+    @Column(name = "fecha_actualizacion",
+            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL")
+    private LocalDateTime fechaActualizacion;
 }

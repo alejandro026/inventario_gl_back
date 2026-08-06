@@ -29,6 +29,10 @@ public class Venta {
     @Column(nullable = false, length = 20)
     private EstadoVenta estado;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metodo_pago", nullable = false, length = 20, columnDefinition = "varchar(20) default 'EFECTIVO'")
+    private MetodoPago metodoPago = MetodoPago.EFECTIVO;
+
     @Column(nullable = false)
     private Double total;
 
@@ -48,10 +52,19 @@ public class Venta {
             foreignKey = @ForeignKey(name = "fk_venta_usuario"))
     private Usuario usuario;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_id",
+            foreignKey = @ForeignKey(name = "fk_venta_cliente"))
+    private Cliente cliente;
+
     @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetalleVenta> detalle = new ArrayList<>();
 
     public enum EstadoVenta {
         PENDIENTE, COMPLETADA, CANCELADA
+    }
+
+    public enum MetodoPago {
+        EFECTIVO, TARJETA, TRANSFERENCIA, CREDITO
     }
 }

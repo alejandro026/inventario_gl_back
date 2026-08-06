@@ -7,8 +7,7 @@ import com.guerrero.Inventario.exception.InsufficientStockException;
 import com.guerrero.Inventario.exception.ResourceNotFoundException;
 import com.guerrero.Inventario.mapper.VentaMapper;
 import com.guerrero.Inventario.model.*;
-import com.guerrero.Inventario.repository.UsuarioRepository;
-import com.guerrero.Inventario.repository.VentaRepository;
+import com.guerrero.Inventario.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,15 +25,27 @@ public class VentaService {
     private final ProductoService productoService;
     private final SucursalService sucursalService;
     private final UsuarioRepository usuarioRepository;
+    private final KardexService kardexService;
+    private final ClienteRepository clienteRepository;
+    private final CuentaPorCobrarRepository cuentaPorCobrarRepository;
+    private final CajaTurnoRepository cajaTurnoRepository;
 
     public VentaService(VentaRepository ventaRepository,
                         ProductoService productoService,
                         SucursalService sucursalService,
-                        UsuarioRepository usuarioRepository) {
+                        UsuarioRepository usuarioRepository,
+                        KardexService kardexService,
+                        ClienteRepository clienteRepository,
+                        CuentaPorCobrarRepository cuentaPorCobrarRepository,
+                        CajaTurnoRepository cajaTurnoRepository) {
         this.ventaRepository = ventaRepository;
         this.productoService = productoService;
         this.sucursalService = sucursalService;
         this.usuarioRepository = usuarioRepository;
+        this.kardexService = kardexService;
+        this.clienteRepository = clienteRepository;
+        this.cuentaPorCobrarRepository = cuentaPorCobrarRepository;
+        this.cajaTurnoRepository = cajaTurnoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -80,11 +91,39 @@ public class VentaService {
             throw new BusinessException("Debe especificar una sucursal para la venta.");
         }
 
+        // Validar turno de caja abierto para el usuario en la sucursal
+        if (usuario != null) {
+            cajaTurnoRepository.findFirstBySucursalIdAndUsuarioIdAndEstadoOrderByFechaAperturaDesc(
+                    sucursal.getId(), usuario.getId(), "ABIERTO")
+                    .orElseThrow(() -> new BusinessException("Debe abrir un turno de caja para esta sucursal antes de realizar ventas."));
+        }
+
         Venta venta = new Venta();
         venta.setSucursal(sucursal);
         venta.setFecha(dto.getFecha() != null ? dto.getFecha() : LocalDateTime.now());
         venta.setEstado(parseEstado(dto.getEstado(), Venta.EstadoVenta.COMPLETADA));
         venta.setUsuario(usuario);
+
+        Venta.MetodoPago metodo = Venta.MetodoPago.EFECTIVO;
+        if (dto.getMetodoPago() != null) {
+            try {
+                metodo = Venta.MetodoPago.valueOf(dto.getMetodoPago().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("Método de pago inválido: " + dto.getMetodoPago());
+            }
+        }
+        venta.setMetodoPago(metodo);
+
+        Cliente cliente = null;
+        if (dto.getIdCliente() != null) {
+            cliente = clienteRepository.findById(dto.getIdCliente())
+                    .orElseThrow(() -> new ResourceNotFoundException("Cliente", dto.getIdCliente()));
+            venta.setCliente(cliente);
+        }
+
+        if (metodo == Venta.MetodoPago.CREDITO && cliente == null) {
+            throw new BusinessException("Debe seleccionar un cliente para realizar una venta a crédito.");
+        }
 
         double total = 0.0;
         List<DetalleVentaDTO> detalles = dto.getDetalle();
@@ -128,14 +167,56 @@ public class VentaService {
         }
 
         venta.setTotal(total);
-        if (dto.getPagoCon() != null && dto.getPagoCon() > 0) {
-            venta.setPagoCon(dto.getPagoCon());
-            venta.setCambio(Math.max(0.0, dto.getPagoCon() - total));
-        } else {
-            venta.setPagoCon(total);
+        if (metodo == Venta.MetodoPago.CREDITO) {
+            double nuevoSaldo = (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0) + total;
+            if (cliente.getLimiteCredito() != null && nuevoSaldo > cliente.getLimiteCredito()) {
+                throw new BusinessException("Límite de crédito excedido. Disponible: $" 
+                        + (cliente.getLimiteCredito() - (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0)) 
+                        + ", Total venta: $" + total);
+            }
+            cliente.setSaldoPendiente(nuevoSaldo);
+            clienteRepository.save(cliente);
+            venta.setPagoCon(0.0);
             venta.setCambio(0.0);
+        } else {
+            if (dto.getPagoCon() != null && dto.getPagoCon() > 0) {
+                venta.setPagoCon(dto.getPagoCon());
+                venta.setCambio(Math.max(0.0, dto.getPagoCon() - total));
+            } else {
+                venta.setPagoCon(total);
+                venta.setCambio(0.0);
+            }
         }
+
         Venta guardada = ventaRepository.save(venta);
+
+        // Registrar movimientos en Kardex
+        for (DetalleVenta d : guardada.getDetalle()) {
+            Producto producto = d.getProducto();
+            if (guardada.getEstado() == Venta.EstadoVenta.COMPLETADA && Boolean.TRUE.equals(producto.getControlaStock())) {
+                kardexService.registrarMovimiento(
+                        producto,
+                        guardada.getSucursal(),
+                        "SALIDA",
+                        d.getCantProd(),
+                        "VENTA",
+                        usuario,
+                        guardada.getId()
+                );
+            }
+        }
+
+        // Generar cuenta por cobrar si es a crédito
+        if (metodo == Venta.MetodoPago.CREDITO) {
+            CuentaPorCobrar cxc = new CuentaPorCobrar();
+            cxc.setCliente(cliente);
+            cxc.setVenta(guardada);
+            cxc.setMontoTotal(total);
+            cxc.setSaldoPendiente(total);
+            cxc.setEstado("PENDIENTE");
+            cuentaPorCobrarRepository.save(cxc);
+        }
+
         return VentaMapper.toDto(guardada);
     }
 
@@ -150,9 +231,37 @@ public class VentaService {
                 Producto p = d.getProducto();
                 if (p != null && Boolean.TRUE.equals(p.getControlaStock())) {
                     p.setCantidad(p.getCantidad() + d.getCantProd());
+                    kardexService.registrarMovimiento(
+                            p,
+                            v.getSucursal(),
+                            "ENTRADA",
+                            d.getCantProd(),
+                            "CANCELACION",
+                            usuarioActual(),
+                            v.getId()
+                      );
                 }
             }
         }
+
+        // Revertir deudas de clientes
+        if (v.getMetodoPago() == Venta.MetodoPago.CREDITO && v.getCliente() != null) {
+            List<CuentaPorCobrar> cxcs = cuentaPorCobrarRepository.findByClienteId(v.getCliente().getId());
+            CuentaPorCobrar cxcAsociada = cxcs.stream()
+                    .filter(cxc -> cxc.getVenta() != null && cxc.getVenta().getId().equals(v.getId()))
+                    .findFirst().orElse(null);
+            if (cxcAsociada != null) {
+                Cliente cliente = v.getCliente();
+                double saldoARestar = cxcAsociada.getSaldoPendiente();
+                cliente.setSaldoPendiente(Math.max(0.0, (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0) - saldoARestar));
+                clienteRepository.save(cliente);
+
+                cxcAsociada.setSaldoPendiente(0.0);
+                cxcAsociada.setEstado("CANCELADA");
+                cuentaPorCobrarRepository.save(cxcAsociada);
+            }
+        }
+
         v.setEstado(Venta.EstadoVenta.CANCELADA);
         return VentaMapper.toDto(ventaRepository.save(v));
     }

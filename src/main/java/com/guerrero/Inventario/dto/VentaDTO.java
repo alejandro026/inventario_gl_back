@@ -47,4 +47,13 @@ public class VentaDTO {
 
     @Schema(description = "Cambio devuelto al cliente (calculado por el backend)", example = "18.00")
     private Double cambio;
+
+    @Schema(description = "Método de pago (EFECTIVO, TARJETA, TRANSFERENCIA, CREDITO)", example = "EFECTIVO")
+    private String metodoPago = "EFECTIVO";
+
+    @Schema(description = "ID del cliente (opcional, obligatorio para ventas a crédito)", example = "1")
+    private Long idCliente;
+
+    @Schema(description = "Nombre del cliente asociado (solo lectura)", example = "Juan Pérez")
+    private String clienteNombre;
 }

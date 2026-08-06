@@ -15,44 +15,30 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "productos")
-public class Producto {
+@Table(name = "clientes")
+public class Cliente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "codigo", length = 50, unique = true)
-    private String codigo;
-
     @Column(nullable = false, length = 120)
     private String nombre;
 
-    @Column(length = 500)
-    private String descripcion;
+    @Column(length = 25)
+    private String telefono;
 
-    @Column(nullable = false)
-    private Double precio;
+    @Column(length = 100)
+    private String email;
 
-    @Column(name = "precio_compra", nullable = false)
-    private Double precioCompra = 0.0;
+    @Column(length = 255)
+    private String direccion;
 
-    @Column(nullable = false)
-    private Integer cantidad;
+    @Column(name = "limite_credito", nullable = false)
+    private Double limiteCredito = 0.0;
 
-    @Column(name = "stock_minimo")
-    private Integer stockMinimo;
-
-    @Column(nullable = false)
-    private Boolean activo = Boolean.TRUE;
-
-    @Column(name = "controla_stock", nullable = false)
-    private Boolean controlaStock = Boolean.TRUE;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_producto_categoria"))
-    private Categoria categoria;
+    @Column(name = "saldo_pendiente", nullable = false)
+    private Double saldoPendiente = 0.0;
 
     @CreationTimestamp
     @Column(name = "fecha_creacion", updatable = false,

@@ -7,10 +7,15 @@ import com.guerrero.Inventario.exception.ResourceNotFoundException;
 import com.guerrero.Inventario.mapper.ProductoMapper;
 import com.guerrero.Inventario.model.Categoria;
 import com.guerrero.Inventario.model.Producto;
+import com.guerrero.Inventario.model.Sucursal;
+import com.guerrero.Inventario.model.Usuario;
 import com.guerrero.Inventario.repository.CategoriaRepository;
 import com.guerrero.Inventario.repository.IProductoRepository;
+import com.guerrero.Inventario.repository.SucursalRepository;
+import com.guerrero.Inventario.repository.UsuarioRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +28,20 @@ public class ProductoService {
 
     private final IProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final KardexService kardexService;
+    private final SucursalRepository sucursalRepository;
+    private final UsuarioRepository usuarioRepository;
 
     public ProductoService(IProductoRepository productoRepository,
-                           CategoriaRepository categoriaRepository) {
+                           CategoriaRepository categoriaRepository,
+                           KardexService kardexService,
+                           SucursalRepository sucursalRepository,
+                           UsuarioRepository usuarioRepository) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
+        this.kardexService = kardexService;
+        this.sucursalRepository = sucursalRepository;
+        this.usuarioRepository = usuarioRepository;
     }
 
     @Transactional(readOnly = true)
@@ -115,7 +129,41 @@ public class ProductoService {
             throw new BusinessException("El stock resultante no puede ser negativo");
         }
         p.setCantidad(nuevo);
-        return ProductoMapper.toDto(productoRepository.save(p));
+        Producto saved = productoRepository.save(p);
+
+        // Registrar movimiento en el Kardex
+        Usuario usuario = usuarioActual();
+        Sucursal sucursal = (usuario != null) ? usuario.getSucursal() : null;
+        if (sucursal == null) {
+            sucursal = sucursalRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new BusinessException("No hay sucursales registradas para registrar el movimiento de inventario."));
+        }
+        String tipo = (delta > 0) ? "ENTRADA" : "SALIDA";
+        kardexService.registrarMovimiento(
+                saved,
+                sucursal,
+                tipo,
+                Math.abs(delta),
+                "AJUSTE_MANUAL",
+                usuario,
+                null
+        );
+
+        return ProductoMapper.toDto(saved);
+    }
+
+    private Usuario usuarioActual() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof Usuario) {
+                return (Usuario) principal;
+            }
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                org.springframework.security.core.userdetails.UserDetails ud = (org.springframework.security.core.userdetails.UserDetails) principal;
+                return usuarioRepository.findByUsername(ud.getUsername()).orElse(null);
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     public void eliminar(Long id) {
