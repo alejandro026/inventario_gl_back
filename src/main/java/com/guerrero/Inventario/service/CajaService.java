@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class CajaService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CajaService.class);
+
     private final CajaTurnoRepository cajaTurnoRepository;
     private final CajaMovimientoRepository cajaMovimientoRepository;
     private final VentaRepository ventaRepository;
@@ -42,8 +44,10 @@ public class CajaService {
     }
 
     public CajaTurnoDTO apertura(Long sucursalId, Long usuarioId, Double montoApertura) {
+        log.info("Abriendo turno de caja en sucursal ID: {} por usuario ID: {}. Monto de apertura: {}", sucursalId, usuarioId, montoApertura);
         cajaTurnoRepository.findFirstBySucursalIdAndUsuarioIdAndEstadoOrderByFechaAperturaDesc(sucursalId, usuarioId, "ABIERTO")
                 .ifPresent(t -> {
+                    log.warn("Intento fallido de apertura de caja: Ya existe un turno abierto para usuario ID: {} en sucursal ID: {}", usuarioId, sucursalId);
                     throw new IllegalStateException("Ya existe un turno de caja abierto para este usuario en esta sucursal");
                 });
 
@@ -62,14 +66,18 @@ public class CajaService {
         turno.setDiferencia(0.0);
         turno.setEstado("ABIERTO");
 
-        return toDto(cajaTurnoRepository.save(turno));
+        CajaTurno saved = cajaTurnoRepository.save(turno);
+        log.info("Turno de caja abierto exitosamente con ID: {}, en sucursal: {}", saved.getId(), sucursal.getNombre());
+        return toDto(saved);
     }
 
     public CajaMovimientoDTO registrarMovimiento(Long turnoId, String tipo, Double monto, String concepto) {
+        log.info("Registrando movimiento de caja en turno ID: {}. Tipo: {}, Monto: {}, Concepto: {}", turnoId, tipo, monto, concepto);
         CajaTurno turno = cajaTurnoRepository.findById(turnoId)
                 .orElseThrow(() -> new ResourceNotFoundException("CajaTurno", turnoId));
 
         if (!"ABIERTO".equals(turno.getEstado())) {
+            log.warn("Intento fallido de registrar movimiento: El turno ID: {} está CERRADO.", turnoId);
             throw new IllegalStateException("No se pueden registrar movimientos en un turno cerrado");
         }
 
@@ -85,14 +93,17 @@ public class CajaService {
         // Update theoretical amount
         actualizarMontoTeorico(turno);
 
+        log.info("Movimiento de caja registrado exitosamente con ID: {}. Nuevo monto teórico: {}", saved.getId(), turno.getMontoCierreTeorico());
         return toMovimientoDto(saved);
     }
 
     public CajaTurnoDTO cierre(Long turnoId, Double montoCierreReal, String notas) {
+        log.info("Procesando cierre de caja para turno ID: {}. Monto real reportado: {}, Notas: {}", turnoId, montoCierreReal, notas);
         CajaTurno turno = cajaTurnoRepository.findById(turnoId)
                 .orElseThrow(() -> new ResourceNotFoundException("CajaTurno", turnoId));
 
         if (!"ABIERTO".equals(turno.getEstado())) {
+            log.warn("Intento fallido de cerrar caja: El turno ID: {} ya está CERRADO.", turnoId);
             throw new IllegalStateException("El turno ya está cerrado");
         }
 
@@ -102,9 +113,23 @@ public class CajaService {
         turno.setMontoCierreReal(montoCierreReal != null ? montoCierreReal : 0.0);
         turno.setDiferencia(turno.getMontoCierreReal() - turno.getMontoCierreTeorico());
         turno.setEstado("CERRADO");
-        turno.setNotas(notas);
+        turno.setNotas(notesSanitize(notas));
 
-        return toDto(cajaTurnoRepository.save(turno));
+        CajaTurno saved = cajaTurnoRepository.save(turno);
+        log.info("Turno de caja ID: {} cerrado con éxito. Teórico: {}, Real: {}, Diferencia: {}", 
+                saved.getId(), saved.getMontoCierreTeorico(), saved.getMontoCierreReal(), saved.getDiferencia());
+
+        if (saved.getDiferencia() != 0.0) {
+            log.warn("¡DISCREPANCIA DE CAJA DETECTADA! Turno ID: {} cerró con una diferencia de: {}", saved.getId(), saved.getDiferencia());
+        }
+
+        return toDto(saved);
+    }
+
+    private String notesSanitize(String notes) {
+        if (notes == null) return null;
+        // Sanitizar notas por si contienen contraseñas o datos muy sensibles
+        return notes.replaceAll("(?i)pass(word)?\\s*=\\s*\\S+", "password=[PROTECTED]");
     }
 
     @Transactional(readOnly = true)
