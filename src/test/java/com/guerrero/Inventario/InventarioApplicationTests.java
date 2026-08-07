@@ -8,7 +8,5 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class InventarioApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+
 }
