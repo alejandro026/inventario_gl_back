@@ -2,14 +2,18 @@ package com.guerrero.Inventario.service;
 
 import com.guerrero.Inventario.dto.CajaMovimientoDTO;
 import com.guerrero.Inventario.dto.CajaTurnoDTO;
+import com.guerrero.Inventario.exception.BusinessException;
 import com.guerrero.Inventario.exception.ResourceNotFoundException;
 import com.guerrero.Inventario.model.*;
 import com.guerrero.Inventario.repository.*;
+import com.guerrero.Inventario.security.CurrentUserProvider;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -17,33 +21,61 @@ import java.util.stream.Collectors;
 public class CajaService {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CajaService.class);
+    private static final Set<String> TIPOS_VALIDOS = Set.of("INGRESO", "EGRESO");
 
     private final CajaTurnoRepository cajaTurnoRepository;
     private final CajaMovimientoRepository cajaMovimientoRepository;
     private final VentaRepository ventaRepository;
     private final SucursalRepository sucursalRepository;
     private final UsuarioRepository usuarioRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public CajaService(CajaTurnoRepository cajaTurnoRepository,
                        CajaMovimientoRepository cajaMovimientoRepository,
                        VentaRepository ventaRepository,
                        SucursalRepository sucursalRepository,
-                       UsuarioRepository usuarioRepository) {
+                       UsuarioRepository usuarioRepository,
+                       CurrentUserProvider currentUserProvider) {
         this.cajaTurnoRepository = cajaTurnoRepository;
         this.cajaMovimientoRepository = cajaMovimientoRepository;
         this.ventaRepository = ventaRepository;
         this.sucursalRepository = sucursalRepository;
         this.usuarioRepository = usuarioRepository;
+        this.currentUserProvider = currentUserProvider;
+    }
+
+    /**
+     * Un usuario solo puede operar su propia caja; solo ADMIN puede indicar explicitamente
+     * el usuarioId de otra persona (por ejemplo, para consultas administrativas).
+     */
+    private Long resolverUsuarioId(Long usuarioIdSolicitado) {
+        Usuario actual = currentUserProvider.obtenerOFallar();
+        if (usuarioIdSolicitado != null && actual.getRol() == Rol.ADMIN) {
+            return usuarioIdSolicitado;
+        }
+        return actual.getId();
+    }
+
+    private void verificarPropietarioOAdmin(CajaTurno turno) {
+        Usuario actual = currentUserProvider.obtenerOFallar();
+        if (actual.getRol() == Rol.ADMIN) {
+            return;
+        }
+        if (!turno.getUsuario().getId().equals(actual.getId())) {
+            throw new AccessDeniedException("No puede operar el turno de caja de otro usuario");
+        }
     }
 
     @Transactional(readOnly = true)
-    public CajaTurnoDTO obtenerEstadoActual(Long sucursalId, Long usuarioId) {
+    public CajaTurnoDTO obtenerEstadoActual(Long sucursalId, Long usuarioIdSolicitado) {
+        Long usuarioId = resolverUsuarioId(usuarioIdSolicitado);
         return cajaTurnoRepository.findFirstBySucursalIdAndUsuarioIdAndEstadoOrderByFechaAperturaDesc(sucursalId, usuarioId, "ABIERTO")
                 .map(this::toDto)
                 .orElse(null);
     }
 
-    public CajaTurnoDTO apertura(Long sucursalId, Long usuarioId, Double montoApertura) {
+    public CajaTurnoDTO apertura(Long sucursalId, Long usuarioIdSolicitado, Double montoApertura) {
+        Long usuarioId = resolverUsuarioId(usuarioIdSolicitado);
         log.info("Abriendo turno de caja en sucursal ID: {} por usuario ID: {}. Monto de apertura: {}", sucursalId, usuarioId, montoApertura);
         cajaTurnoRepository.findFirstBySucursalIdAndUsuarioIdAndEstadoOrderByFechaAperturaDesc(sucursalId, usuarioId, "ABIERTO")
                 .ifPresent(t -> {
@@ -73,8 +105,17 @@ public class CajaService {
 
     public CajaMovimientoDTO registrarMovimiento(Long turnoId, String tipo, Double monto, String concepto) {
         log.info("Registrando movimiento de caja en turno ID: {}. Tipo: {}, Monto: {}, Concepto: {}", turnoId, tipo, monto, concepto);
+        if (monto == null || monto <= 0) {
+            throw new BusinessException("El monto del movimiento debe ser mayor a cero");
+        }
+        String tipoNormalizado = tipo == null ? "" : tipo.trim().toUpperCase();
+        if (!TIPOS_VALIDOS.contains(tipoNormalizado)) {
+            throw new BusinessException("Tipo de movimiento invalido. Use INGRESO o EGRESO");
+        }
+
         CajaTurno turno = cajaTurnoRepository.findById(turnoId)
                 .orElseThrow(() -> new ResourceNotFoundException("CajaTurno", turnoId));
+        verificarPropietarioOAdmin(turno);
 
         if (!"ABIERTO".equals(turno.getEstado())) {
             log.warn("Intento fallido de registrar movimiento: El turno ID: {} está CERRADO.", turnoId);
@@ -83,7 +124,7 @@ public class CajaService {
 
         CajaMovimiento movimiento = new CajaMovimiento();
         movimiento.setCajaTurno(turno);
-        movimiento.setTipo(tipo.toUpperCase());
+        movimiento.setTipo(tipoNormalizado);
         movimiento.setMonto(monto);
         movimiento.setConcepto(concepto);
         movimiento.setFecha(LocalDateTime.now());
@@ -101,6 +142,7 @@ public class CajaService {
         log.info("Procesando cierre de caja para turno ID: {}. Monto real reportado: {}, Notas: {}", turnoId, montoCierreReal, notas);
         CajaTurno turno = cajaTurnoRepository.findById(turnoId)
                 .orElseThrow(() -> new ResourceNotFoundException("CajaTurno", turnoId));
+        verificarPropietarioOAdmin(turno);
 
         if (!"ABIERTO".equals(turno.getEstado())) {
             log.warn("Intento fallido de cerrar caja: El turno ID: {} ya está CERRADO.", turnoId);
