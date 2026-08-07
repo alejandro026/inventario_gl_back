@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -28,11 +30,11 @@ public class CuentaPorCobrar {
             foreignKey = @ForeignKey(name = "fk_cxc_venta"))
     private Venta venta;
 
-    @Column(name = "monto_total", nullable = false)
-    private Double montoTotal;
+    @Column(name = "monto_total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal montoTotal;
 
-    @Column(name = "saldo_pendiente", nullable = false)
-    private Double saldoPendiente;
+    @Column(name = "saldo_pendiente", nullable = false, precision = 12, scale = 2)
+    private BigDecimal saldoPendiente;
 
     @Column(nullable = false, length = 20)
     private String estado = "PENDIENTE"; // PENDIENTE, PAGADO

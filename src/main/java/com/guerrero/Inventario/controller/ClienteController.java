@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 
@@ -73,7 +74,7 @@ public class ClienteController {
     @PostMapping("/cuentas/{cuentaId}/abono")
     @Operation(summary = "Registrar un abono a una cuenta por cobrar")
     public ResponseEntity<AbonoCreditoDTO> registrarAbono(@PathVariable Long cuentaId,
-                                                           @RequestParam @Positive Double monto,
+                                                           @RequestParam @Positive BigDecimal monto,
                                                            @RequestParam(required = false, defaultValue = "EFECTIVO") String metodoPago) {
         return ResponseEntity.ok(service.registrarAbono(cuentaId, monto, metodoPago));
     }

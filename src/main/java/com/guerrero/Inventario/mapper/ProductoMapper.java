@@ -4,6 +4,8 @@ import com.guerrero.Inventario.dto.ProductoDTO;
 import com.guerrero.Inventario.model.Categoria;
 import com.guerrero.Inventario.model.Producto;
 
+import java.math.BigDecimal;
+
 public final class ProductoMapper {
 
     private ProductoMapper() {}
@@ -36,7 +38,7 @@ public final class ProductoMapper {
         p.setNombre(dto.getNombre());
         p.setDescripcion(dto.getDescripcion());
         p.setPrecio(dto.getPrecio());
-        p.setPrecioCompra(dto.getPrecioCompra() == null ? 0.0 : dto.getPrecioCompra());
+        p.setPrecioCompra(dto.getPrecioCompra() == null ? BigDecimal.ZERO : dto.getPrecioCompra());
         p.setCantidad(dto.getCantidad());
         p.setStockMinimo(dto.getStockMinimo());
         p.setActivo(dto.getActivo() == null ? Boolean.TRUE : dto.getActivo());

@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -41,7 +42,7 @@ public class CajaController {
             "(ADMIN puede abrirlo para otro usuario indicando usuarioId)")
     public ResponseEntity<CajaTurnoDTO> apertura(@RequestParam Long sucursalId,
                                                  @RequestParam(required = false) Long usuarioId,
-                                                 @RequestParam(required = false, defaultValue = "0.0") @PositiveOrZero Double montoApertura) {
+                                                 @RequestParam(required = false, defaultValue = "0.0") @PositiveOrZero BigDecimal montoApertura) {
         return ResponseEntity.ok(service.apertura(sucursalId, usuarioId, montoApertura));
     }
 
@@ -49,7 +50,7 @@ public class CajaController {
     @Operation(summary = "Registrar un ingreso o egreso de caja")
     public ResponseEntity<CajaMovimientoDTO> registrarMovimiento(@RequestParam Long turnoId,
                                                                  @RequestParam String tipo,
-                                                                 @RequestParam @Positive Double monto,
+                                                                 @RequestParam @Positive BigDecimal monto,
                                                                  @RequestParam String concepto) {
         return ResponseEntity.ok(service.registrarMovimiento(turnoId, tipo, monto, concepto));
     }
@@ -57,7 +58,7 @@ public class CajaController {
     @PostMapping("/cierre")
     @Operation(summary = "Cerrar un turno de caja (Arqueo)")
     public ResponseEntity<CajaTurnoDTO> cierre(@RequestParam Long turnoId,
-                                               @RequestParam @PositiveOrZero Double montoCierreReal,
+                                               @RequestParam @PositiveOrZero BigDecimal montoCierreReal,
                                                @RequestParam(required = false) String notas) {
         return ResponseEntity.ok(service.cierre(turnoId, montoCierreReal, notas));
     }

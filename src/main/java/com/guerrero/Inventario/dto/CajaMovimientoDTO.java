@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -14,7 +15,7 @@ public class CajaMovimientoDTO {
     private Long id;
     private Long idCajaTurno;
     private String tipo;
-    private Double monto;
+    private BigDecimal monto;
     private String concepto;
     private LocalDateTime fecha;
 }

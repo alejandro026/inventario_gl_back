@@ -5,6 +5,7 @@ import com.guerrero.Inventario.dto.VentaDTO;
 import com.guerrero.Inventario.model.DetalleVenta;
 import com.guerrero.Inventario.model.Venta;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,7 @@ public final class VentaMapper {
         dto.setId(d.getId());
         dto.setCantProd(d.getCantProd());
         dto.setPrecio(d.getPrecio());
-        dto.setPrecioCompra(d.getPrecioCompra() != null ? d.getPrecioCompra() : (d.getProducto() != null && d.getProducto().getPrecioCompra() != null ? d.getProducto().getPrecioCompra() : 0.0));
+        dto.setPrecioCompra(d.getPrecioCompra() != null ? d.getPrecioCompra() : (d.getProducto() != null && d.getProducto().getPrecioCompra() != null ? d.getProducto().getPrecioCompra() : BigDecimal.ZERO));
         dto.setSubtotal(d.getSubtotal());
         if (d.getProducto() != null) {
             dto.setProductoId(d.getProducto().getId());

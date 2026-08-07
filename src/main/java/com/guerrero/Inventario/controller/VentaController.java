@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -70,7 +71,7 @@ public class VentaController {
     public Map<String, Object> totalVendido(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        double total = service.totalVendido(inicio, fin);
+        BigDecimal total = service.totalVendido(inicio, fin);
         return Map.of("inicio", inicio, "fin", fin, "total", total);
     }
 }

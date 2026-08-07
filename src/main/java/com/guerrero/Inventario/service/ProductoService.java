@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -109,7 +110,7 @@ public class ProductoService {
         p.setNombre(dto.getNombre());
         p.setDescripcion(dto.getDescripcion());
         p.setPrecio(dto.getPrecio());
-        p.setPrecioCompra(dto.getPrecioCompra() == null ? 0.0 : dto.getPrecioCompra());
+        p.setPrecioCompra(dto.getPrecioCompra() == null ? BigDecimal.ZERO : dto.getPrecioCompra());
         p.setCantidad(dto.getCantidad());
         p.setStockMinimo(dto.getStockMinimo());
         p.setActivo(dto.getActivo() == null ? p.getActivo() : dto.getActivo());

@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -71,12 +72,12 @@ public class VentaService {
     }
 
     @Transactional(readOnly = true)
-    public Double totalVendido(LocalDateTime inicio, LocalDateTime fin) {
+    public BigDecimal totalVendido(LocalDateTime inicio, LocalDateTime fin) {
         if (inicio == null || fin == null || inicio.isAfter(fin)) {
             throw new BusinessException("Rango de fechas invalido");
         }
-        Double total = ventaRepository.totalVendidoEntre(inicio, fin);
-        return total == null ? 0.0 : total;
+        BigDecimal total = ventaRepository.totalVendidoEntre(inicio, fin);
+        return total == null ? BigDecimal.ZERO : total;
     }
 
     public VentaDTO registrar(VentaDTO dto) {
@@ -129,7 +130,7 @@ public class VentaService {
             throw new BusinessException("Debe seleccionar un cliente para realizar una venta a crédito.");
         }
 
-        double total = 0.0;
+        BigDecimal total = BigDecimal.ZERO;
         List<DetalleVentaDTO> detalles = dto.getDetalle();
         if (detalles == null || detalles.isEmpty()) {
             throw new BusinessException("La venta debe contener al menos un detalle");
@@ -159,11 +160,11 @@ public class VentaService {
             detalle.setProducto(producto);
             detalle.setCantProd(cantidad);
             detalle.setPrecio(producto.getPrecio());
-            detalle.setPrecioCompra(producto.getPrecioCompra() != null ? producto.getPrecioCompra() : 0.0);
-            double subtotal = producto.getPrecio() * cantidad;
+            detalle.setPrecioCompra(producto.getPrecioCompra() != null ? producto.getPrecioCompra() : BigDecimal.ZERO);
+            BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(cantidad));
             detalle.setSubtotal(subtotal);
             venta.getDetalle().add(detalle);
-            total += subtotal;
+            total = total.add(subtotal);
 
             if (venta.getEstado() == Venta.EstadoVenta.COMPLETADA && Boolean.TRUE.equals(producto.getControlaStock())) {
                 producto.setCantidad(producto.getCantidad() - cantidad);
@@ -172,23 +173,24 @@ public class VentaService {
 
         venta.setTotal(total);
         if (metodo == Venta.MetodoPago.CREDITO) {
-            double nuevoSaldo = (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0) + total;
-            if (cliente.getLimiteCredito() != null && nuevoSaldo > cliente.getLimiteCredito()) {
-                throw new BusinessException("Límite de crédito excedido. Disponible: $" 
-                        + (cliente.getLimiteCredito() - (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0)) 
+            BigDecimal saldoActual = cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : BigDecimal.ZERO;
+            BigDecimal nuevoSaldo = saldoActual.add(total);
+            if (cliente.getLimiteCredito() != null && nuevoSaldo.compareTo(cliente.getLimiteCredito()) > 0) {
+                throw new BusinessException("Límite de crédito excedido. Disponible: $"
+                        + cliente.getLimiteCredito().subtract(saldoActual)
                         + ", Total venta: $" + total);
             }
             cliente.setSaldoPendiente(nuevoSaldo);
             clienteRepository.save(cliente);
-            venta.setPagoCon(0.0);
-            venta.setCambio(0.0);
+            venta.setPagoCon(BigDecimal.ZERO);
+            venta.setCambio(BigDecimal.ZERO);
         } else {
-            if (dto.getPagoCon() != null && dto.getPagoCon() > 0) {
+            if (dto.getPagoCon() != null && dto.getPagoCon().compareTo(BigDecimal.ZERO) > 0) {
                 venta.setPagoCon(dto.getPagoCon());
-                venta.setCambio(Math.max(0.0, dto.getPagoCon() - total));
+                venta.setCambio(dto.getPagoCon().subtract(total).max(BigDecimal.ZERO));
             } else {
                 venta.setPagoCon(total);
-                venta.setCambio(0.0);
+                venta.setCambio(BigDecimal.ZERO);
             }
         }
 
@@ -261,11 +263,12 @@ public class VentaService {
                     .findFirst().orElse(null);
             if (cxcAsociada != null) {
                 Cliente cliente = v.getCliente();
-                double saldoARestar = cxcAsociada.getSaldoPendiente();
-                cliente.setSaldoPendiente(Math.max(0.0, (cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : 0.0) - saldoARestar));
+                BigDecimal saldoARestar = cxcAsociada.getSaldoPendiente();
+                BigDecimal saldoClienteActual = cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : BigDecimal.ZERO;
+                cliente.setSaldoPendiente(saldoClienteActual.subtract(saldoARestar).max(BigDecimal.ZERO));
                 clienteRepository.save(cliente);
 
-                cxcAsociada.setSaldoPendiente(0.0);
+                cxcAsociada.setSaldoPendiente(BigDecimal.ZERO);
                 cxcAsociada.setEstado("CANCELADA");
                 cuentaPorCobrarRepository.save(cxcAsociada);
             }

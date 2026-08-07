@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -15,6 +17,6 @@ public class ClienteDTO {
     private String telefono;
     private String email;
     private String direccion;
-    private Double limiteCredito;
-    private Double saldoPendiente;
+    private BigDecimal limiteCredito;
+    private BigDecimal saldoPendiente;
 }

@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -35,17 +36,17 @@ public class CajaTurno {
     @Column(name = "fecha_cierre")
     private LocalDateTime fechaCierre;
 
-    @Column(name = "monto_apertura", nullable = false)
-    private Double montoApertura = 0.0;
+    @Column(name = "monto_apertura", nullable = false, precision = 12, scale = 2)
+    private BigDecimal montoApertura = BigDecimal.ZERO;
 
-    @Column(name = "monto_cierre_teorico", nullable = false)
-    private Double montoCierreTeorico = 0.0;
+    @Column(name = "monto_cierre_teorico", nullable = false, precision = 12, scale = 2)
+    private BigDecimal montoCierreTeorico = BigDecimal.ZERO;
 
-    @Column(name = "monto_cierre_real", nullable = false)
-    private Double montoCierreReal = 0.0;
+    @Column(name = "monto_cierre_real", nullable = false, precision = 12, scale = 2)
+    private BigDecimal montoCierreReal = BigDecimal.ZERO;
 
-    @Column(name = "diferencia", nullable = false)
-    private Double diferencia = 0.0;
+    @Column(name = "diferencia", nullable = false, precision = 12, scale = 2)
+    private BigDecimal diferencia = BigDecimal.ZERO;
 
     @Column(nullable = false, length = 20)
     private String estado = "ABIERTO"; // ABIERTO, CERRADO

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -32,13 +34,15 @@ public class ProductoDTO {
 
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
+    @Digits(integer = 10, fraction = 2, message = "El precio admite maximo 2 decimales")
     @Schema(example = "45.50")
-    private Double precio;
+    private BigDecimal precio;
 
     @NotNull(message = "El precio de compra es obligatorio")
     @DecimalMin(value = "0.0", message = "El precio de compra no puede ser negativo")
+    @Digits(integer = 10, fraction = 2, message = "El precio de compra admite maximo 2 decimales")
     @Schema(example = "25.00")
-    private Double precioCompra;
+    private BigDecimal precioCompra;
 
     @NotNull(message = "La cantidad es obligatoria")
     @Min(value = 0, message = "La cantidad no puede ser negativa")
