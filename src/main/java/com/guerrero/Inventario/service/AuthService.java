@@ -23,6 +23,8 @@ import java.util.UUID;
 @Transactional
 public class AuthService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuthService.class);
+
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -58,10 +60,13 @@ public class AuthService {
     }
 
     public AuthResponse registrar(RegistroRequest req) {
+        log.info("Registrando nuevo usuario. Username: {}, Rol: {}", req.getUsername(), req.getRol());
         if (usuarioRepository.existsByUsername(req.getUsername())) {
+            log.warn("Registro fallido: El username '{}' ya existe.", req.getUsername());
             throw new DuplicateResourceException("El username ya esta registrado");
         }
         if (usuarioRepository.existsByEmail(req.getEmail())) {
+            log.warn("Registro fallido: El email '{}' ya existe.", req.getEmail());
             throw new DuplicateResourceException("El email ya esta registrado");
         }
         Usuario u = new Usuario();
@@ -76,6 +81,7 @@ public class AuthService {
         String token = jwtService.generateToken(guardado);
         RefreshToken rt = generarYGuardarRefreshToken(guardado, null);
 
+        log.info("Usuario '{}' registrado exitosamente. ID: {}", guardado.getUsername(), guardado.getId());
         return AuthResponse.builder()
                 .tokenType("Bearer")
                 .accessToken(token)
@@ -90,12 +96,22 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest req) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
-        );
+        log.info("Intento de login para usuario: {}", req.getUsername());
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
+            );
+        } catch (Exception e) {
+            log.warn("Fallo de autenticación para usuario: {}. Causa: {}", req.getUsername(), e.getMessage());
+            throw e;
+        }
+
         Usuario u = usuarioRepository.findByUsername(req.getUsername()).orElseThrow();
         String token = jwtService.generateToken(u);
         RefreshToken rt = generarYGuardarRefreshToken(u, null);
+
+        log.info("Login exitoso para usuario: {}. ID Usuario: {}, Rol: {}, Sucursal: {}", 
+                u.getUsername(), u.getId(), u.getRol().name(), u.getSucursal() != null ? u.getSucursal().getId() : "Ninguna");
 
         return AuthResponse.builder()
                 .tokenType("Bearer")
@@ -111,17 +127,23 @@ public class AuthService {
     }
 
     public AuthResponse refresh(String rawToken) {
+        log.info("Procesando solicitud de refresco de token.");
         RefreshToken rt = refreshTokenRepository.findByToken(rawToken)
-                .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Refresh Token invalido"));
+                .orElseThrow(() -> {
+                    log.warn("Fallo de refresco: token ausente o inválido en base de datos.");
+                    return new org.springframework.security.authentication.BadCredentialsException("Refresh Token invalido");
+                });
 
         // Detectar reuso / robo de token
         if (rt.isUsed() || rt.isRevocado()) {
+            log.warn("¡ALERTA DE SEGURIDAD! Se detectó un intento de reúso/robo del Refresh Token. Se invalida la familia completa. FamilyId: {}", rt.getTokenFamilyId());
             refreshTokenRepository.revokeFamily(rt.getTokenFamilyId());
             throw new org.springframework.security.authentication.BadCredentialsException("Refresh Token ya utilizado o revocado. Alerta de seguridad.");
         }
 
         // Detectar expiracion
         if (rt.getFechaExpiracion().isBefore(LocalDateTime.now())) {
+            log.warn("Fallo de refresco: Token expirado para usuario: {}.", rt.getUsuario().getUsername());
             throw new org.springframework.security.authentication.BadCredentialsException("Refresh Token expirado");
         }
 
@@ -133,6 +155,8 @@ public class AuthService {
         Usuario usuario = rt.getUsuario();
         String newAccessToken = jwtService.generateToken(usuario);
         RefreshToken newRefreshToken = generarYGuardarRefreshToken(usuario, rt.getTokenFamilyId());
+
+        log.info("Token rotado exitosamente (RTR) para usuario: {}. FamilyId: {}", usuario.getUsername(), rt.getTokenFamilyId());
 
         return AuthResponse.builder()
                 .tokenType("Bearer")
@@ -149,10 +173,14 @@ public class AuthService {
 
     public void logout(String rawToken) {
         if (rawToken != null) {
+            log.info("Procesando logout. Invalidando token.");
             refreshTokenRepository.findByToken(rawToken).ifPresent(rt -> {
                 rt.setRevocado(true);
                 refreshTokenRepository.save(rt);
+                log.info("Token de refresco revocado para el usuario: {}", rt.getUsuario().getUsername());
             });
+        } else {
+            log.info("Petición de logout recibida sin token de refresco.");
         }
     }
 }

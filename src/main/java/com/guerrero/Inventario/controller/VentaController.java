@@ -1,6 +1,7 @@
 package com.guerrero.Inventario.controller;
 
 import com.guerrero.Inventario.dto.VentaDTO;
+import com.guerrero.Inventario.dto.PagedResponse;
 import com.guerrero.Inventario.service.VentaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -33,12 +35,12 @@ public class VentaController {
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','EMPLEADO')")
     @Operation(summary = "Listar ventas (paginado)")
-    public Page<VentaDTO> listar(
+    public PagedResponse<VentaDTO> listar(
             @ParameterObject @PageableDefault(size = 20, sort = "fecha") Pageable pageable,
             @Parameter(description = "Filtrar por id de sucursal") @RequestParam(required = false) Long sucursalId,
             @Parameter(description = "Fecha de inicio") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @Parameter(description = "Fecha de fin") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        return service.listar(pageable, sucursalId, inicio, fin);
+        return PagedResponse.from(service.listar(pageable, sucursalId, inicio, fin));
     }
 
     @GetMapping("/{id}")
@@ -69,7 +71,7 @@ public class VentaController {
     public Map<String, Object> totalVendido(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
-        double total = service.totalVendido(inicio, fin);
+        BigDecimal total = service.totalVendido(inicio, fin);
         return Map.of("inicio", inicio, "fin", fin, "total", total);
     }
 }

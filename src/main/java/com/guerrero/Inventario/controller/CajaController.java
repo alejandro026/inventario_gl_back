@@ -5,13 +5,20 @@ import com.guerrero.Inventario.dto.CajaTurnoDTO;
 import com.guerrero.Inventario.service.CajaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/caja")
+@Validated
+@PreAuthorize("hasAnyRole('ADMIN','EMPLEADO')")
 @Tag(name = "Caja", description = "Control y Arqueo de Caja (Turnos)")
 public class CajaController {
 
@@ -22,17 +29,20 @@ public class CajaController {
     }
 
     @GetMapping("/estado-actual")
-    @Operation(summary = "Obtener el turno de caja abierto actual de un usuario en una sucursal")
-    public ResponseEntity<CajaTurnoDTO> obtenerEstadoActual(@RequestParam Long sucursalId, @RequestParam Long usuarioId) {
+    @Operation(summary = "Obtener el turno de caja abierto actual del usuario autenticado en una sucursal " +
+            "(ADMIN puede consultar el de otro usuario indicando usuarioId)")
+    public ResponseEntity<CajaTurnoDTO> obtenerEstadoActual(@RequestParam Long sucursalId,
+                                                             @RequestParam(required = false) Long usuarioId) {
         CajaTurnoDTO dto = service.obtenerEstadoActual(sucursalId, usuarioId);
         return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/apertura")
-    @Operation(summary = "Abrir un nuevo turno de caja")
-    public ResponseEntity<CajaTurnoDTO> apertura(@RequestParam Long sucursalId, 
-                                                 @RequestParam Long usuarioId, 
-                                                 @RequestParam(required = false, defaultValue = "0.0") Double montoApertura) {
+    @Operation(summary = "Abrir un nuevo turno de caja para el usuario autenticado " +
+            "(ADMIN puede abrirlo para otro usuario indicando usuarioId)")
+    public ResponseEntity<CajaTurnoDTO> apertura(@RequestParam Long sucursalId,
+                                                 @RequestParam(required = false) Long usuarioId,
+                                                 @RequestParam(required = false, defaultValue = "0.0") @PositiveOrZero BigDecimal montoApertura) {
         return ResponseEntity.ok(service.apertura(sucursalId, usuarioId, montoApertura));
     }
 
@@ -40,7 +50,7 @@ public class CajaController {
     @Operation(summary = "Registrar un ingreso o egreso de caja")
     public ResponseEntity<CajaMovimientoDTO> registrarMovimiento(@RequestParam Long turnoId,
                                                                  @RequestParam String tipo,
-                                                                 @RequestParam Double monto,
+                                                                 @RequestParam @Positive BigDecimal monto,
                                                                  @RequestParam String concepto) {
         return ResponseEntity.ok(service.registrarMovimiento(turnoId, tipo, monto, concepto));
     }
@@ -48,7 +58,7 @@ public class CajaController {
     @PostMapping("/cierre")
     @Operation(summary = "Cerrar un turno de caja (Arqueo)")
     public ResponseEntity<CajaTurnoDTO> cierre(@RequestParam Long turnoId,
-                                               @RequestParam Double montoCierreReal,
+                                               @RequestParam @PositiveOrZero BigDecimal montoCierreReal,
                                                @RequestParam(required = false) String notas) {
         return ResponseEntity.ok(service.cierre(turnoId, montoCierreReal, notas));
     }

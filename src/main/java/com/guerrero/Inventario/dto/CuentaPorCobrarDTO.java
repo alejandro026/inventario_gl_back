@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -16,7 +17,7 @@ public class CuentaPorCobrarDTO {
     private String clienteNombre;
     private Long idVenta;
     private LocalDateTime ventaFecha;
-    private Double montoTotal;
-    private Double saldoPendiente;
+    private BigDecimal montoTotal;
+    private BigDecimal saldoPendiente;
     private String estado;
 }

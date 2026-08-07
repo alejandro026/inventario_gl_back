@@ -13,6 +13,7 @@ import com.guerrero.Inventario.repository.CuentaPorCobrarRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -58,8 +59,8 @@ public class ClienteService {
         c.setTelefono(dto.getTelefono());
         c.setEmail(dto.getEmail());
         c.setDireccion(dto.getDireccion());
-        c.setLimiteCredito(dto.getLimiteCredito() != null ? dto.getLimiteCredito() : 0.0);
-        c.setSaldoPendiente(0.0);
+        c.setLimiteCredito(dto.getLimiteCredito() != null ? dto.getLimiteCredito() : BigDecimal.ZERO);
+        c.setSaldoPendiente(BigDecimal.ZERO);
         return toDto(clienteRepository.save(c));
     }
 
@@ -69,7 +70,7 @@ public class ClienteService {
         c.setTelefono(dto.getTelefono());
         c.setEmail(dto.getEmail());
         c.setDireccion(dto.getDireccion());
-        c.setLimiteCredito(dto.getLimiteCredito() != null ? dto.getLimiteCredito() : 0.0);
+        c.setLimiteCredito(dto.getLimiteCredito() != null ? dto.getLimiteCredito() : BigDecimal.ZERO);
         return toDto(clienteRepository.save(c));
     }
 
@@ -90,7 +91,7 @@ public class ClienteService {
                 .collect(Collectors.toList());
     }
 
-    public AbonoCreditoDTO registrarAbono(Long cuentaId, Double monto, String metodoPago) {
+    public AbonoCreditoDTO registrarAbono(Long cuentaId, BigDecimal monto, String metodoPago) {
         CuentaPorCobrar cxc = cuentaPorCobrarRepository.findById(cuentaId)
                 .orElseThrow(() -> new ResourceNotFoundException("CuentaPorCobrar", cuentaId));
 
@@ -98,9 +99,9 @@ public class ClienteService {
             throw new IllegalStateException("Esta deuda ya ha sido pagada en su totalidad");
         }
 
-        double nuevoSaldo = cxc.getSaldoPendiente() - monto;
-        cxc.setSaldoPendiente(Math.max(0.0, nuevoSaldo));
-        if (cxc.getSaldoPendiente() <= 0.0) {
+        BigDecimal nuevoSaldo = cxc.getSaldoPendiente().subtract(monto);
+        cxc.setSaldoPendiente(nuevoSaldo.max(BigDecimal.ZERO));
+        if (cxc.getSaldoPendiente().compareTo(BigDecimal.ZERO) <= 0) {
             cxc.setEstado("PAGADO");
         }
 
@@ -114,8 +115,8 @@ public class ClienteService {
 
         // Update total outstanding balance for customer
         Cliente cliente = cxc.getCliente();
-        double saldoCliente = cliente.getSaldoPendiente() - monto;
-        cliente.setSaldoPendiente(Math.max(0.0, saldoCliente));
+        BigDecimal saldoCliente = cliente.getSaldoPendiente().subtract(monto);
+        cliente.setSaldoPendiente(saldoCliente.max(BigDecimal.ZERO));
         clienteRepository.save(cliente);
 
         cuentaPorCobrarRepository.save(cxc);

@@ -7,6 +7,7 @@ import com.guerrero.Inventario.repository.VentaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,30 +25,31 @@ public class ReporteFinanceService {
     public ReporteFinanceDTO obtenerMétricasFinancieras(LocalDateTime inicio, LocalDateTime fin, Long categoriaId) {
         List<Venta> ventas = ventaRepository.findCompletedSalesBetween(inicio, fin);
 
-        double totalVentas = 0.0;
-        double totalCosto = 0.0;
+        BigDecimal totalVentas = BigDecimal.ZERO;
+        BigDecimal totalCosto = BigDecimal.ZERO;
         long cantidadVentasConFiltro = 0;
 
         // Mapa para agrupar ventas por producto (con filtro de categoría si está especificado)
         Map<Long, ReporteFinanceDTO.ProductoRanking> rankingMap = new HashMap<>();
-        
+
         // Mapa para agrupar rendimiento general por todas las categorías
         Map<Long, ReporteFinanceDTO.CategoriaGanancia> categoriasMap = new HashMap<>();
 
         for (Venta v : ventas) {
             boolean ventaTieneProductoDeCategoria = false;
-            double subtotalVentaFiltro = 0.0;
-            double costoVentaFiltro = 0.0;
+            BigDecimal subtotalVentaFiltro = BigDecimal.ZERO;
+            BigDecimal costoVentaFiltro = BigDecimal.ZERO;
 
             for (DetalleVenta d : v.getDetalle()) {
-                double precioVenta = d.getPrecio() != null ? d.getPrecio() : 0.0;
-                double precioCompra = d.getPrecioCompra() != null ? d.getPrecioCompra() : 
-                                     (d.getProducto() != null && d.getProducto().getPrecioCompra() != null ? d.getProducto().getPrecioCompra() : 0.0);
-                
-                int cantidad = d.getCantProd() != null ? d.getCantProd() : 0;
+                BigDecimal precioVenta = d.getPrecio() != null ? d.getPrecio() : BigDecimal.ZERO;
+                BigDecimal precioCompra = d.getPrecioCompra() != null ? d.getPrecioCompra() :
+                                     (d.getProducto() != null && d.getProducto().getPrecioCompra() != null ? d.getProducto().getPrecioCompra() : BigDecimal.ZERO);
 
-                double costoFila = precioCompra * cantidad;
-                double subtotalFila = d.getSubtotal() != null ? d.getSubtotal() : (precioVenta * cantidad);
+                int cantidad = d.getCantProd() != null ? d.getCantProd() : 0;
+                BigDecimal cantidadBd = BigDecimal.valueOf(cantidad);
+
+                BigDecimal costoFila = precioCompra.multiply(cantidadBd);
+                BigDecimal subtotalFila = d.getSubtotal() != null ? d.getSubtotal() : precioVenta.multiply(cantidadBd);
 
                 // 1. Agrupar en el rendimiento por categoría general (independiente del filtro seleccionado)
                 if (d.getProducto() != null && d.getProducto().getCategoria() != null) {
@@ -58,28 +60,28 @@ public class ReporteFinanceService {
                         ReporteFinanceDTO.CategoriaGanancia c = new ReporteFinanceDTO.CategoriaGanancia();
                         c.setCategoriaId(id);
                         c.setNombre(catNombre);
-                        c.setTotalIngresos(0.0);
-                        c.setTotalCosto(0.0);
-                        c.setTotalGanancia(0.0);
+                        c.setTotalIngresos(BigDecimal.ZERO);
+                        c.setTotalCosto(BigDecimal.ZERO);
+                        c.setTotalGanancia(BigDecimal.ZERO);
                         c.setMargenUtilidad(0.0);
                         return c;
                     });
 
-                    cg.setTotalIngresos(cg.getTotalIngresos() + subtotalFila);
-                    cg.setTotalCosto(cg.getTotalCosto() + costoFila);
-                    cg.setTotalGanancia(cg.getTotalIngresos() - cg.getTotalCosto());
-                    if (cg.getTotalIngresos() > 0) {
-                        cg.setMargenUtilidad((cg.getTotalGanancia() / cg.getTotalIngresos()) * 100);
+                    cg.setTotalIngresos(cg.getTotalIngresos().add(subtotalFila));
+                    cg.setTotalCosto(cg.getTotalCosto().add(costoFila));
+                    cg.setTotalGanancia(cg.getTotalIngresos().subtract(cg.getTotalCosto()));
+                    if (cg.getTotalIngresos().compareTo(BigDecimal.ZERO) > 0) {
+                        cg.setMargenUtilidad(cg.getTotalGanancia().doubleValue() / cg.getTotalIngresos().doubleValue() * 100);
                     }
                 }
 
                 // 2. Aplicar filtro de categoría a las métricas del dashboard si se especifica
-                boolean cumpleFiltro = (categoriaId == null) || 
+                boolean cumpleFiltro = (categoriaId == null) ||
                     (d.getProducto() != null && d.getProducto().getCategoria() != null && d.getProducto().getCategoria().getId().equals(categoriaId));
 
                 if (cumpleFiltro) {
-                    subtotalVentaFiltro += subtotalFila;
-                    costoVentaFiltro += costoFila;
+                    subtotalVentaFiltro = subtotalVentaFiltro.add(subtotalFila);
+                    costoVentaFiltro = costoVentaFiltro.add(costoFila);
                     ventaTieneProductoDeCategoria = true;
 
                     if (d.getProducto() != null) {
@@ -91,20 +93,20 @@ public class ReporteFinanceService {
                             pr.setProductoId(id);
                             pr.setNombre(nombre);
                             pr.setCantidadVendida(0);
-                            pr.setTotalIngresos(0.0);
-                            pr.setTotalCosto(0.0);
-                            pr.setTotalGanancia(0.0);
+                            pr.setTotalIngresos(BigDecimal.ZERO);
+                            pr.setTotalCosto(BigDecimal.ZERO);
+                            pr.setTotalGanancia(BigDecimal.ZERO);
                             pr.setMargenUtilidad(0.0);
                             return pr;
                         });
 
                         r.setCantidadVendida(r.getCantidadVendida() + cantidad);
-                        r.setTotalIngresos(r.getTotalIngresos() + subtotalFila);
-                        r.setTotalCosto(r.getTotalCosto() + costoFila);
-                        r.setTotalGanancia(r.getTotalIngresos() - r.getTotalCosto());
-                        
-                        if (r.getTotalIngresos() > 0) {
-                            r.setMargenUtilidad((r.getTotalGanancia() / r.getTotalIngresos()) * 100);
+                        r.setTotalIngresos(r.getTotalIngresos().add(subtotalFila));
+                        r.setTotalCosto(r.getTotalCosto().add(costoFila));
+                        r.setTotalGanancia(r.getTotalIngresos().subtract(r.getTotalCosto()));
+
+                        if (r.getTotalIngresos().compareTo(BigDecimal.ZERO) > 0) {
+                            r.setMargenUtilidad(r.getTotalGanancia().doubleValue() / r.getTotalIngresos().doubleValue() * 100);
                         }
                     }
                 }
@@ -113,27 +115,29 @@ public class ReporteFinanceService {
             if (ventaTieneProductoDeCategoria) {
                 cantidadVentasConFiltro++;
                 if (categoriaId != null) {
-                    totalVentas += subtotalVentaFiltro;
-                    totalCosto += costoVentaFiltro;
+                    totalVentas = totalVentas.add(subtotalVentaFiltro);
+                    totalCosto = totalCosto.add(costoVentaFiltro);
                 } else {
-                    totalVentas += v.getTotal() != null ? v.getTotal() : 0.0;
-                    totalCosto += costoVentaFiltro;
+                    totalVentas = totalVentas.add(v.getTotal() != null ? v.getTotal() : BigDecimal.ZERO);
+                    totalCosto = totalCosto.add(costoVentaFiltro);
                 }
             }
         }
 
-        double gananciaNeta = totalVentas - totalCosto;
-        double margenUtilidad = totalVentas > 0 ? (gananciaNeta / totalVentas) * 100 : 0.0;
+        BigDecimal gananciaNeta = totalVentas.subtract(totalCosto);
+        double margenUtilidad = totalVentas.compareTo(BigDecimal.ZERO) > 0
+                ? gananciaNeta.doubleValue() / totalVentas.doubleValue() * 100
+                : 0.0;
 
         // Ordenar productos del ranking de mayor a menor ganancia
         List<ReporteFinanceDTO.ProductoRanking> rankingOrdenado = rankingMap.values().stream()
-                .sorted(Comparator.comparingDouble(ReporteFinanceDTO.ProductoRanking::getTotalGanancia).reversed())
+                .sorted(Comparator.comparing(ReporteFinanceDTO.ProductoRanking::getTotalGanancia).reversed())
                 .limit(10) // Top 10 productos más rentables
                 .collect(Collectors.toList());
 
         // Ordenar categorías por mayor ganancia
         List<ReporteFinanceDTO.CategoriaGanancia> rendimientoCategorias = categoriasMap.values().stream()
-                .sorted(Comparator.comparingDouble(ReporteFinanceDTO.CategoriaGanancia::getTotalGanancia).reversed())
+                .sorted(Comparator.comparing(ReporteFinanceDTO.CategoriaGanancia::getTotalGanancia).reversed())
                 .collect(Collectors.toList());
 
         ReporteFinanceDTO dto = new ReporteFinanceDTO();

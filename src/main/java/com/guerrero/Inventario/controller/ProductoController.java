@@ -1,6 +1,7 @@
 package com.guerrero.Inventario.controller;
 
 import com.guerrero.Inventario.dto.ProductoDTO;
+import com.guerrero.Inventario.dto.PagedResponse;
 import com.guerrero.Inventario.service.ProductoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,11 +31,11 @@ public class ProductoController {
 
     @GetMapping
     @Operation(summary = "Listar productos (paginado, filtro por categoria o nombre)")
-    public Page<ProductoDTO> listar(
+    public PagedResponse<ProductoDTO> listar(
             @ParameterObject @PageableDefault(size = 20) Pageable pageable,
             @Parameter(description = "Filtrar por id de categoria") @RequestParam(required = false) Long categoriaId,
             @Parameter(description = "Buscar por parte del nombre") @RequestParam(required = false) String buscar) {
-        return service.listar(pageable, categoriaId, buscar);
+        return PagedResponse.from(service.listar(pageable, categoriaId, buscar));
     }
 
     @GetMapping("/{id}")

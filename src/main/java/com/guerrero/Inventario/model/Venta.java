@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,14 +34,14 @@ public class Venta {
     @Column(name = "metodo_pago", nullable = false, length = 20, columnDefinition = "varchar(20) default 'EFECTIVO'")
     private MetodoPago metodoPago = MetodoPago.EFECTIVO;
 
-    @Column(nullable = false)
-    private Double total;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal total;
 
-    @Column(name = "pago_con")
-    private Double pagoCon;
+    @Column(name = "pago_con", precision = 12, scale = 2)
+    private BigDecimal pagoCon;
 
-    @Column(name = "cambio")
-    private Double cambio;
+    @Column(name = "cambio", precision = 12, scale = 2)
+    private BigDecimal cambio;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sucursal_id", nullable = false,

@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,13 +41,13 @@ public class VentaDTO {
     private List<DetalleVentaDTO> detalle;
 
     @Schema(description = "Total (calculado por el backend)", example = "182.00")
-    private Double total;
+    private BigDecimal total;
 
     @Schema(description = "Monto pagado por el cliente", example = "200.00")
-    private Double pagoCon;
+    private BigDecimal pagoCon;
 
     @Schema(description = "Cambio devuelto al cliente (calculado por el backend)", example = "18.00")
-    private Double cambio;
+    private BigDecimal cambio;
 
     @Schema(description = "Método de pago (EFECTIVO, TARJETA, TRANSFERENCIA, CREDITO)", example = "EFECTIVO")
     private String metodoPago = "EFECTIVO";
