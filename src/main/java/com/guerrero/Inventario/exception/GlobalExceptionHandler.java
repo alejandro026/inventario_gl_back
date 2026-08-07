@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -90,6 +91,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "No tiene permisos para acceder a este recurso", req);
     }
 
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiError> handleOptimisticLock(ObjectOptimisticLockingFailureException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT,
+                "El recurso fue modificado por otra operacion simultanea. Intente nuevamente.", req);
+    }
+
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ApiError> handle404(NoHandlerFoundException ex, HttpServletRequest req) {
         return build(HttpStatus.NOT_FOUND, "Ruta no encontrada: " + req.getRequestURI(), req);
@@ -99,7 +106,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleAny(Exception ex, HttpServletRequest req) {
         log.error("Error no controlado", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Error interno: " + ex.getMessage(), req);
+                "Ha ocurrido un error interno. Si el problema persiste, contacte al administrador.", req);
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req) {

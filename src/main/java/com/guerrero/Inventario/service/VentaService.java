@@ -8,9 +8,9 @@ import com.guerrero.Inventario.exception.ResourceNotFoundException;
 import com.guerrero.Inventario.mapper.VentaMapper;
 import com.guerrero.Inventario.model.*;
 import com.guerrero.Inventario.repository.*;
+import com.guerrero.Inventario.security.CurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,28 +26,28 @@ public class VentaService {
     private final VentaRepository ventaRepository;
     private final ProductoService productoService;
     private final SucursalService sucursalService;
-    private final UsuarioRepository usuarioRepository;
     private final KardexService kardexService;
     private final ClienteRepository clienteRepository;
     private final CuentaPorCobrarRepository cuentaPorCobrarRepository;
     private final CajaTurnoRepository cajaTurnoRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public VentaService(VentaRepository ventaRepository,
                         ProductoService productoService,
                         SucursalService sucursalService,
-                        UsuarioRepository usuarioRepository,
                         KardexService kardexService,
                         ClienteRepository clienteRepository,
                         CuentaPorCobrarRepository cuentaPorCobrarRepository,
-                        CajaTurnoRepository cajaTurnoRepository) {
+                        CajaTurnoRepository cajaTurnoRepository,
+                        CurrentUserProvider currentUserProvider) {
         this.ventaRepository = ventaRepository;
         this.productoService = productoService;
         this.sucursalService = sucursalService;
-        this.usuarioRepository = usuarioRepository;
         this.kardexService = kardexService;
         this.clienteRepository = clienteRepository;
         this.cuentaPorCobrarRepository = cuentaPorCobrarRepository;
         this.cajaTurnoRepository = cajaTurnoRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +82,7 @@ public class VentaService {
     public VentaDTO registrar(VentaDTO dto) {
         log.info("Iniciando registro de venta. Sucursal ID: {}, Cliente ID: {}, Método Pago: {}, Total detalles: {}", 
                 dto.getIdSucursal(), dto.getIdCliente(), dto.getMetodoPago(), dto.getDetalle() != null ? dto.getDetalle().size() : 0);
-        Usuario usuario = usuarioActual();
+        Usuario usuario = currentUserProvider.obtenerONull();
         Sucursal sucursal = null;
 
         if (usuario != null && usuario.getSucursal() != null) {
@@ -246,7 +246,7 @@ public class VentaService {
                             "ENTRADA",
                             d.getCantProd(),
                             "CANCELACION",
-                            usuarioActual(),
+                            currentUserProvider.obtenerONull(),
                             v.getId()
                       );
                 }
@@ -291,17 +291,4 @@ public class VentaService {
         }
     }
 
-    private Usuario usuarioActual() {
-        try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof Usuario) {
-                return (Usuario) principal;
-            }
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                org.springframework.security.core.userdetails.UserDetails ud = (org.springframework.security.core.userdetails.UserDetails) principal;
-                return usuarioRepository.findByUsername(ud.getUsername()).orElse(null);
-            }
-        } catch (Exception ignored) {}
-        return null;
-    }
 }

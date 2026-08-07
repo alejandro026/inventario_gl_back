@@ -7,7 +7,10 @@ import com.guerrero.Inventario.service.ClienteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -15,6 +18,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clientes")
+@Validated
+@PreAuthorize("hasAnyRole('ADMIN','EMPLEADO')")
 @Tag(name = "Clientes", description = "Gestion de clientes y cuentas por cobrar (credito)")
 public class ClienteController {
 
@@ -68,7 +73,7 @@ public class ClienteController {
     @PostMapping("/cuentas/{cuentaId}/abono")
     @Operation(summary = "Registrar un abono a una cuenta por cobrar")
     public ResponseEntity<AbonoCreditoDTO> registrarAbono(@PathVariable Long cuentaId,
-                                                           @RequestParam Double monto,
+                                                           @RequestParam @Positive Double monto,
                                                            @RequestParam(required = false, defaultValue = "EFECTIVO") String metodoPago) {
         return ResponseEntity.ok(service.registrarAbono(cuentaId, monto, metodoPago));
     }

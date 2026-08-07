@@ -12,10 +12,9 @@ import com.guerrero.Inventario.model.Usuario;
 import com.guerrero.Inventario.repository.CategoriaRepository;
 import com.guerrero.Inventario.repository.IProductoRepository;
 import com.guerrero.Inventario.repository.SucursalRepository;
-import com.guerrero.Inventario.repository.UsuarioRepository;
+import com.guerrero.Inventario.security.CurrentUserProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,18 +29,18 @@ public class ProductoService {
     private final CategoriaRepository categoriaRepository;
     private final KardexService kardexService;
     private final SucursalRepository sucursalRepository;
-    private final UsuarioRepository usuarioRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public ProductoService(IProductoRepository productoRepository,
                            CategoriaRepository categoriaRepository,
                            KardexService kardexService,
                            SucursalRepository sucursalRepository,
-                           UsuarioRepository usuarioRepository) {
+                           CurrentUserProvider currentUserProvider) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.kardexService = kardexService;
         this.sucursalRepository = sucursalRepository;
-        this.usuarioRepository = usuarioRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @Transactional(readOnly = true)
@@ -132,7 +131,7 @@ public class ProductoService {
         Producto saved = productoRepository.save(p);
 
         // Registrar movimiento en el Kardex
-        Usuario usuario = usuarioActual();
+        Usuario usuario = currentUserProvider.obtenerONull();
         Sucursal sucursal = (usuario != null) ? usuario.getSucursal() : null;
         if (sucursal == null) {
             sucursal = sucursalRepository.findAll().stream().findFirst()
@@ -150,20 +149,6 @@ public class ProductoService {
         );
 
         return ProductoMapper.toDto(saved);
-    }
-
-    private Usuario usuarioActual() {
-        try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            if (principal instanceof Usuario) {
-                return (Usuario) principal;
-            }
-            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
-                org.springframework.security.core.userdetails.UserDetails ud = (org.springframework.security.core.userdetails.UserDetails) principal;
-                return usuarioRepository.findByUsername(ud.getUsername()).orElse(null);
-            }
-        } catch (Exception ignored) {}
-        return null;
     }
 
     public void eliminar(Long id) {
