@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -24,8 +25,8 @@ public class AbonoCredito {
             foreignKey = @ForeignKey(name = "fk_abono_cxc"))
     private CuentaPorCobrar cuentaPorCobrar;
 
-    @Column(nullable = false)
-    private Double monto;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal monto;
 
     @Column(nullable = false)
     private LocalDateTime fecha;

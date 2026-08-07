@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -16,13 +17,13 @@ import java.util.List;
 public class ReporteFinanceDTO {
 
     @Schema(description = "Ingresos brutos totales por ventas", example = "15450.50")
-    private Double totalVentas;
+    private BigDecimal totalVentas;
 
     @Schema(description = "Costo de inversión total en mercancía vendida", example = "9200.00")
-    private Double totalCosto;
+    private BigDecimal totalCosto;
 
     @Schema(description = "Ganancia neta total (ingresos - costo)", example = "6250.50")
-    private Double gananciaNeta;
+    private BigDecimal gananciaNeta;
 
     @Schema(description = "Margen de ganancia promedio del negocio", example = "40.45")
     private Double margenUtilidad;
@@ -44,9 +45,9 @@ public class ReporteFinanceDTO {
         private Long productoId;
         private String nombre;
         private Integer cantidadVendida;
-        private Double totalIngresos;
-        private Double totalCosto;
-        private Double totalGanancia;
+        private BigDecimal totalIngresos;
+        private BigDecimal totalCosto;
+        private BigDecimal totalGanancia;
         private Double margenUtilidad;
     }
 
@@ -57,9 +58,9 @@ public class ReporteFinanceDTO {
     public static class CategoriaGanancia {
         private Long categoriaId;
         private String nombre;
-        private Double totalIngresos;
-        private Double totalCosto;
-        private Double totalGanancia;
+        private BigDecimal totalIngresos;
+        private BigDecimal totalCosto;
+        private BigDecimal totalGanancia;
         private Double margenUtilidad;
     }
 }

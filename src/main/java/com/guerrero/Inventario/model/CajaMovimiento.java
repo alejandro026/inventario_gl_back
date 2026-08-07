@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -27,8 +28,8 @@ public class CajaMovimiento {
     @Column(nullable = false, length = 20)
     private String tipo; // INGRESO, EGRESO
 
-    @Column(nullable = false)
-    private Double monto;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal monto;
 
     @Column(nullable = false, length = 255)
     private String concepto;

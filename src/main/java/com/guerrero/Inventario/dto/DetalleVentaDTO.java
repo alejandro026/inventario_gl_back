@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -30,13 +32,13 @@ public class DetalleVentaDTO {
     private Integer cantProd;
 
     @Schema(description = "Precio unitario (calculado por el backend)", example = "45.50")
-    private Double precio;
+    private BigDecimal precio;
 
     @Schema(description = "Precio de compra unitario (calculado por el backend)", example = "25.00")
-    private Double precioCompra;
+    private BigDecimal precioCompra;
 
     @Schema(description = "Subtotal (calculado por el backend)", example = "91.00")
-    private Double subtotal;
+    private BigDecimal subtotal;
 
     @Schema(description = "Nombre de la categoría del producto (solo respuesta)", example = "PAPELERIA")
     private String categoriaProd;

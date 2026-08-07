@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -31,11 +32,11 @@ public class Producto {
     @Column(length = 500)
     private String descripcion;
 
-    @Column(nullable = false)
-    private Double precio;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal precio;
 
-    @Column(name = "precio_compra", nullable = false)
-    private Double precioCompra = 0.0;
+    @Column(name = "precio_compra", nullable = false, precision = 12, scale = 2)
+    private BigDecimal precioCompra = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private Integer cantidad;

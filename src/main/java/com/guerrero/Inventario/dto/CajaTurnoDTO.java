@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -18,12 +19,12 @@ public class CajaTurnoDTO {
     private String usuarioNombre;
     private LocalDateTime fechaApertura;
     private LocalDateTime fechaCierre;
-    private Double montoApertura;
-    private Double montoCierreTeorico;
-    private Double montoCierreReal;
-    private Double diferencia;
+    private BigDecimal montoApertura;
+    private BigDecimal montoCierreTeorico;
+    private BigDecimal montoCierreReal;
+    private BigDecimal diferencia;
     private String estado;
     private String notas;
-    private java.util.Map<String, Double> desgloseMetodosPago;
-    private java.util.Map<String, Double> desgloseCategorias;
+    private java.util.Map<String, BigDecimal> desgloseMetodosPago;
+    private java.util.Map<String, BigDecimal> desgloseCategorias;
 }

@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -74,7 +75,7 @@ public class CajaService {
                 .orElse(null);
     }
 
-    public CajaTurnoDTO apertura(Long sucursalId, Long usuarioIdSolicitado, Double montoApertura) {
+    public CajaTurnoDTO apertura(Long sucursalId, Long usuarioIdSolicitado, BigDecimal montoApertura) {
         Long usuarioId = resolverUsuarioId(usuarioIdSolicitado);
         log.info("Abriendo turno de caja en sucursal ID: {} por usuario ID: {}. Monto de apertura: {}", sucursalId, usuarioId, montoApertura);
         cajaTurnoRepository.findFirstBySucursalIdAndUsuarioIdAndEstadoOrderByFechaAperturaDesc(sucursalId, usuarioId, "ABIERTO")
@@ -92,10 +93,10 @@ public class CajaService {
         turno.setSucursal(sucursal);
         turno.setUsuario(usuario);
         turno.setFechaApertura(LocalDateTime.now());
-        turno.setMontoApertura(montoApertura != null ? montoApertura : 0.0);
+        turno.setMontoApertura(montoApertura != null ? montoApertura : BigDecimal.ZERO);
         turno.setMontoCierreTeorico(turno.getMontoApertura());
-        turno.setMontoCierreReal(0.0);
-        turno.setDiferencia(0.0);
+        turno.setMontoCierreReal(BigDecimal.ZERO);
+        turno.setDiferencia(BigDecimal.ZERO);
         turno.setEstado("ABIERTO");
 
         CajaTurno saved = cajaTurnoRepository.save(turno);
@@ -103,9 +104,9 @@ public class CajaService {
         return toDto(saved);
     }
 
-    public CajaMovimientoDTO registrarMovimiento(Long turnoId, String tipo, Double monto, String concepto) {
+    public CajaMovimientoDTO registrarMovimiento(Long turnoId, String tipo, BigDecimal monto, String concepto) {
         log.info("Registrando movimiento de caja en turno ID: {}. Tipo: {}, Monto: {}, Concepto: {}", turnoId, tipo, monto, concepto);
-        if (monto == null || monto <= 0) {
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("El monto del movimiento debe ser mayor a cero");
         }
         String tipoNormalizado = tipo == null ? "" : tipo.trim().toUpperCase();
@@ -138,7 +139,7 @@ public class CajaService {
         return toMovimientoDto(saved);
     }
 
-    public CajaTurnoDTO cierre(Long turnoId, Double montoCierreReal, String notas) {
+    public CajaTurnoDTO cierre(Long turnoId, BigDecimal montoCierreReal, String notas) {
         log.info("Procesando cierre de caja para turno ID: {}. Monto real reportado: {}, Notas: {}", turnoId, montoCierreReal, notas);
         CajaTurno turno = cajaTurnoRepository.findById(turnoId)
                 .orElseThrow(() -> new ResourceNotFoundException("CajaTurno", turnoId));
@@ -152,16 +153,16 @@ public class CajaService {
         turno.setFechaCierre(LocalDateTime.now());
         actualizarMontoTeorico(turno);
 
-        turno.setMontoCierreReal(montoCierreReal != null ? montoCierreReal : 0.0);
-        turno.setDiferencia(turno.getMontoCierreReal() - turno.getMontoCierreTeorico());
+        turno.setMontoCierreReal(montoCierreReal != null ? montoCierreReal : BigDecimal.ZERO);
+        turno.setDiferencia(turno.getMontoCierreReal().subtract(turno.getMontoCierreTeorico()));
         turno.setEstado("CERRADO");
         turno.setNotas(notesSanitize(notas));
 
         CajaTurno saved = cajaTurnoRepository.save(turno);
-        log.info("Turno de caja ID: {} cerrado con éxito. Teórico: {}, Real: {}, Diferencia: {}", 
+        log.info("Turno de caja ID: {} cerrado con éxito. Teórico: {}, Real: {}, Diferencia: {}",
                 saved.getId(), saved.getMontoCierreTeorico(), saved.getMontoCierreReal(), saved.getDiferencia());
 
-        if (saved.getDiferencia() != 0.0) {
+        if (saved.getDiferencia().compareTo(BigDecimal.ZERO) != 0) {
             log.warn("¡DISCREPANCIA DE CAJA DETECTADA! Turno ID: {} cerró con una diferencia de: {}", saved.getId(), saved.getDiferencia());
         }
 
@@ -198,16 +199,16 @@ public class CajaService {
                 fin
         );
 
-        double totalEfectivoVentas = ventas.stream()
+        BigDecimal totalEfectivoVentas = ventas.stream()
                 .filter(v -> v.getEstado() == Venta.EstadoVenta.COMPLETADA && v.getMetodoPago() == Venta.MetodoPago.EFECTIVO)
-                .mapToDouble(Venta::getTotal)
-                .sum();
+                .map(Venta::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<CajaMovimiento> movimientos = cajaMovimientoRepository.findByCajaTurnoIdOrderByFechaAsc(turno.getId());
-        double ingresos = movimientos.stream().filter(m -> "INGRESO".equals(m.getTipo())).mapToDouble(CajaMovimiento::getMonto).sum();
-        double egresos = movimientos.stream().filter(m -> "EGRESO".equals(m.getTipo())).mapToDouble(CajaMovimiento::getMonto).sum();
+        BigDecimal ingresos = movimientos.stream().filter(m -> "INGRESO".equals(m.getTipo())).map(CajaMovimiento::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal egresos = movimientos.stream().filter(m -> "EGRESO".equals(m.getTipo())).map(CajaMovimiento::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        turno.setMontoCierreTeorico(turno.getMontoApertura() + totalEfectivoVentas + ingresos - egresos);
+        turno.setMontoCierreTeorico(turno.getMontoApertura().add(totalEfectivoVentas).add(ingresos).subtract(egresos));
     }
 
     private CajaTurnoDTO toDto(CajaTurno t) {
@@ -221,7 +222,7 @@ public class CajaService {
         dto.setFechaApertura(t.getFechaApertura());
         dto.setFechaCierre(t.getFechaCierre());
         dto.setMontoApertura(t.getMontoApertura());
-        dto.setMontoCierreReal(t.getMontoCierreReal() != null ? t.getMontoCierreReal() : 0.0);
+        dto.setMontoCierreReal(t.getMontoCierreReal() != null ? t.getMontoCierreReal() : BigDecimal.ZERO);
         dto.setEstado(t.getEstado());
         dto.setNotas(t.getNotas());
 
@@ -235,39 +236,39 @@ public class CajaService {
         );
 
         // Calcular efectivo teórico de forma dinámica y en tiempo real
-        double totalEfectivoVentas = ventas.stream()
+        BigDecimal totalEfectivoVentas = ventas.stream()
                 .filter(v -> v.getEstado() == Venta.EstadoVenta.COMPLETADA && v.getMetodoPago() == Venta.MetodoPago.EFECTIVO)
-                .mapToDouble(Venta::getTotal)
-                .sum();
+                .map(Venta::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<CajaMovimiento> movimientos = cajaMovimientoRepository.findByCajaTurnoIdOrderByFechaAsc(t.getId());
-        double ingresos = movimientos.stream().filter(m -> "INGRESO".equals(m.getTipo())).mapToDouble(CajaMovimiento::getMonto).sum();
-        double egresos = movimientos.stream().filter(m -> "EGRESO".equals(m.getTipo())).mapToDouble(CajaMovimiento::getMonto).sum();
+        BigDecimal ingresos = movimientos.stream().filter(m -> "INGRESO".equals(m.getTipo())).map(CajaMovimiento::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal egresos = movimientos.stream().filter(m -> "EGRESO".equals(m.getTipo())).map(CajaMovimiento::getMonto).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        double teorico = t.getMontoApertura() + totalEfectivoVentas + ingresos - egresos;
+        BigDecimal teorico = t.getMontoApertura().add(totalEfectivoVentas).add(ingresos).subtract(egresos);
         dto.setMontoCierreTeorico(teorico);
 
         if ("CERRADO".equals(t.getEstado())) {
-            dto.setDiferencia(dto.getMontoCierreReal() - teorico);
+            dto.setDiferencia(dto.getMontoCierreReal().subtract(teorico));
         } else {
-            dto.setDiferencia(0.0);
+            dto.setDiferencia(BigDecimal.ZERO);
         }
 
-        java.util.Map<String, Double> metodosMap = new java.util.HashMap<>();
-        metodosMap.put("EFECTIVO", 0.0);
-        metodosMap.put("TARJETA", 0.0);
-        metodosMap.put("TRANSFERENCIA", 0.0);
-        metodosMap.put("CREDITO", 0.0);
+        java.util.Map<String, BigDecimal> metodosMap = new java.util.HashMap<>();
+        metodosMap.put("EFECTIVO", BigDecimal.ZERO);
+        metodosMap.put("TARJETA", BigDecimal.ZERO);
+        metodosMap.put("TRANSFERENCIA", BigDecimal.ZERO);
+        metodosMap.put("CREDITO", BigDecimal.ZERO);
 
         for (Venta v : ventas) {
             if (v.getEstado() == Venta.EstadoVenta.COMPLETADA) {
                 String met = v.getMetodoPago().name();
-                metodosMap.put(met, metodosMap.getOrDefault(met, 0.0) + v.getTotal());
+                metodosMap.put(met, metodosMap.getOrDefault(met, BigDecimal.ZERO).add(v.getTotal()));
             }
         }
         dto.setDesgloseMetodosPago(metodosMap);
 
-        java.util.Map<String, Double> categoriasMap = new java.util.HashMap<>();
+        java.util.Map<String, BigDecimal> categoriasMap = new java.util.HashMap<>();
         for (Venta v : ventas) {
             if (v.getEstado() == Venta.EstadoVenta.COMPLETADA && v.getMetodoPago() == Venta.MetodoPago.EFECTIVO) {
                 for (DetalleVenta d : v.getDetalle()) {
@@ -275,8 +276,8 @@ public class CajaService {
                     if (d.getProducto() != null && d.getProducto().getCategoria() != null) {
                         catName = d.getProducto().getCategoria().getNombre();
                     }
-                    double sub = d.getSubtotal() != null ? d.getSubtotal() : 0.0;
-                    categoriasMap.put(catName, categoriasMap.getOrDefault(catName, 0.0) + sub);
+                    BigDecimal sub = d.getSubtotal() != null ? d.getSubtotal() : BigDecimal.ZERO;
+                    categoriasMap.put(catName, categoriasMap.getOrDefault(catName, BigDecimal.ZERO).add(sub));
                 }
             }
         }

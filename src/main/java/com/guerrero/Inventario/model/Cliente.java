@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -34,11 +35,11 @@ public class Cliente {
     @Column(length = 255)
     private String direccion;
 
-    @Column(name = "limite_credito", nullable = false)
-    private Double limiteCredito = 0.0;
+    @Column(name = "limite_credito", nullable = false, precision = 12, scale = 2)
+    private BigDecimal limiteCredito = BigDecimal.ZERO;
 
-    @Column(name = "saldo_pendiente", nullable = false)
-    private Double saldoPendiente = 0.0;
+    @Column(name = "saldo_pendiente", nullable = false, precision = 12, scale = 2)
+    private BigDecimal saldoPendiente = BigDecimal.ZERO;
 
     @CreationTimestamp
     @Column(name = "fecha_creacion", updatable = false,
