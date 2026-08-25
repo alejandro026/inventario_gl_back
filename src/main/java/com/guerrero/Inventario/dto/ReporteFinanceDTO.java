@@ -28,6 +28,9 @@ public class ReporteFinanceDTO {
     @Schema(description = "Margen de ganancia promedio del negocio", example = "40.45")
     private Double margenUtilidad;
 
+    @Schema(description = "Suma total de descuentos aplicados en ventas", example = "450.00")
+    private BigDecimal totalDescuentos;
+
     @Schema(description = "Cantidad total de transacciones completadas", example = "120")
     private Long cantidadVentas;
 

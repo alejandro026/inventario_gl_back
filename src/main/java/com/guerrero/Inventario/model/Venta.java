@@ -34,6 +34,12 @@ public class Venta {
     @Column(name = "metodo_pago", nullable = false, length = 20, columnDefinition = "varchar(20) default 'EFECTIVO'")
     private MetodoPago metodoPago = MetodoPago.EFECTIVO;
 
+    @Column(name = "subtotal", precision = 12, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "descuento", precision = 12, scale = 2)
+    private BigDecimal descuento;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 

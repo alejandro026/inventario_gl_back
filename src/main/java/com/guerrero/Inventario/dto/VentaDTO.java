@@ -40,6 +40,12 @@ public class VentaDTO {
     @Valid
     private List<DetalleVentaDTO> detalle;
 
+    @Schema(description = "Subtotal antes de descuento (calculado por el backend)", example = "200.00")
+    private BigDecimal subtotal;
+
+    @Schema(description = "Descuento aplicado (calculado por el backend)", example = "20.00")
+    private BigDecimal descuento;
+
     @Schema(description = "Total (calculado por el backend)", example = "182.00")
     private BigDecimal total;
 
