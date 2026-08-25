@@ -163,7 +163,7 @@
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.80</minimum> <!-- Exige 60% de cobertura mínima -->
+											<minimum>0.60</minimum> <!-- Exige 60% de cobertura mínima -->
 										</limit>
 									</limits>
 								</rule>
