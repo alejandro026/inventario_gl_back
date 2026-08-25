@@ -181,12 +181,41 @@ public class VentaService {
         List<Promocion> activePromos = promocionRepository.findActivePromotions(venta.getFecha());
         if (!activePromos.isEmpty()) {
             Promocion promo = activePromos.get(0);
-            if (subtotalAcumulado.compareTo(promo.getCompraMinima()) >= 0) {
-                descuento = subtotalAcumulado.multiply(promo.getPorcentajeDescuento())
-                        .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-                total = subtotalAcumulado.subtract(descuento);
-                log.info("Aplicando promoción '{}': {}% de descuento sobre subtotal {}. Descuento: {}",
-                        promo.getNombre(), promo.getPorcentajeDescuento(), subtotalAcumulado, descuento);
+            
+            // Si la promoción tiene categorías específicas asociadas
+            if (promo.getCategorias() != null && !promo.getCategorias().isEmpty()) {
+                java.util.Set<Long> eligibleCatIds = promo.getCategorias().stream()
+                        .map(Categoria::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+                
+                // Calcular subtotal elegible sumando solo los productos de esas categorías
+                BigDecimal subtotalElegible = BigDecimal.ZERO;
+                for (DetalleVenta d : venta.getDetalle()) {
+                    if (d.getProducto() != null && d.getProducto().getCategoria() != null) {
+                        Long catId = d.getProducto().getCategoria().getId();
+                        if (eligibleCatIds.contains(catId)) {
+                            subtotalElegible = subtotalElegible.add(d.getSubtotal() != null ? d.getSubtotal() : BigDecimal.ZERO);
+                        }
+                    }
+                }
+                
+                // Aplicar mínimo y porcentaje sobre la porción elegible
+                if (subtotalElegible.compareTo(promo.getCompraMinima()) >= 0) {
+                    descuento = subtotalElegible.multiply(promo.getPorcentajeDescuento())
+                            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    total = subtotalAcumulado.subtract(descuento);
+                    log.info("Aplicando promoción de categoría '{}': {}% de descuento sobre subtotal elegible {}. Descuento: {}",
+                            promo.getNombre(), promo.getPorcentajeDescuento(), subtotalElegible, descuento);
+                }
+            } else {
+                // Promoción global
+                if (subtotalAcumulado.compareTo(promo.getCompraMinima()) >= 0) {
+                    descuento = subtotalAcumulado.multiply(promo.getPorcentajeDescuento())
+                            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    total = subtotalAcumulado.subtract(descuento);
+                    log.info("Aplicando promoción global '{}': {}% de descuento sobre subtotal {}. Descuento: {}",
+                            promo.getNombre(), promo.getPorcentajeDescuento(), subtotalAcumulado, descuento);
+                }
             }
         }
 
