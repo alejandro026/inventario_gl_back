@@ -38,4 +38,13 @@ public class Promocion {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activa = Boolean.TRUE;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "promocion_categorias",
+        joinColumns = @JoinColumn(name = "promocion_id"),
+        inverseJoinColumns = @JoinColumn(name = "categoria_id")
+    )
+    @Builder.Default
+    private java.util.Set<Categoria> categorias = new java.util.HashSet<>();
 }
