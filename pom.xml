@@ -149,6 +149,27 @@
 							<goal>report</goal>
 						</goals>
 					</execution>
+					<!-- Regla para hacer fallar el build si no se alcanza la cobertura mínima -->
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum> <!-- Exige 60% de cobertura mínima -->
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>

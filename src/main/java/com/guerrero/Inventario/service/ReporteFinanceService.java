@@ -27,6 +27,7 @@ public class ReporteFinanceService {
 
         BigDecimal totalVentas = BigDecimal.ZERO;
         BigDecimal totalCosto = BigDecimal.ZERO;
+        BigDecimal totalDescuentos = BigDecimal.ZERO;
         long cantidadVentasConFiltro = 0;
 
         // Mapa para agrupar ventas por producto (con filtro de categoría si está especificado)
@@ -114,6 +115,9 @@ public class ReporteFinanceService {
 
             if (ventaTieneProductoDeCategoria) {
                 cantidadVentasConFiltro++;
+                if (v.getDescuento() != null) {
+                    totalDescuentos = totalDescuentos.add(v.getDescuento());
+                }
                 if (categoriaId != null) {
                     totalVentas = totalVentas.add(subtotalVentaFiltro);
                     totalCosto = totalCosto.add(costoVentaFiltro);
@@ -145,6 +149,7 @@ public class ReporteFinanceService {
         dto.setTotalCosto(totalCosto);
         dto.setGananciaNeta(gananciaNeta);
         dto.setMargenUtilidad(margenUtilidad);
+        dto.setTotalDescuentos(totalDescuentos);
         dto.setCantidadVentas(categoriaId != null ? cantidadVentasConFiltro : (long) ventas.size());
         dto.setRankingProductos(rankingOrdenado);
         dto.setRendimientoCategorias(rendimientoCategorias);

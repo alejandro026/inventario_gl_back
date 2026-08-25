@@ -9,6 +9,7 @@ import com.guerrero.Inventario.mapper.VentaMapper;
 import com.guerrero.Inventario.model.*;
 import com.guerrero.Inventario.repository.*;
 import com.guerrero.Inventario.security.CurrentUserProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,9 +21,9 @@ import java.util.List;
 
 @Service
 @Transactional
+@Slf4j
 public class VentaService {
 
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(VentaService.class);
 
     private final VentaRepository ventaRepository;
     private final ProductoService productoService;
@@ -32,6 +33,7 @@ public class VentaService {
     private final CuentaPorCobrarRepository cuentaPorCobrarRepository;
     private final CajaTurnoRepository cajaTurnoRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final PromocionRepository promocionRepository;
 
     public VentaService(VentaRepository ventaRepository,
                         ProductoService productoService,
@@ -40,7 +42,8 @@ public class VentaService {
                         ClienteRepository clienteRepository,
                         CuentaPorCobrarRepository cuentaPorCobrarRepository,
                         CajaTurnoRepository cajaTurnoRepository,
-                        CurrentUserProvider currentUserProvider) {
+                        CurrentUserProvider currentUserProvider,
+                        PromocionRepository promocionRepository) {
         this.ventaRepository = ventaRepository;
         this.productoService = productoService;
         this.sucursalService = sucursalService;
@@ -49,6 +52,7 @@ public class VentaService {
         this.cuentaPorCobrarRepository = cuentaPorCobrarRepository;
         this.cajaTurnoRepository = cajaTurnoRepository;
         this.currentUserProvider = currentUserProvider;
+        this.promocionRepository = promocionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -171,6 +175,52 @@ public class VentaService {
             }
         }
 
+        BigDecimal subtotalAcumulado = total;
+        BigDecimal descuento = BigDecimal.ZERO;
+
+        List<Promocion> activePromos = promocionRepository.findActivePromotions(venta.getFecha());
+        if (!activePromos.isEmpty()) {
+            Promocion promo = activePromos.get(0);
+            
+            // Si la promoción tiene categorías específicas asociadas
+            if (promo.getCategorias() != null && !promo.getCategorias().isEmpty()) {
+                java.util.Set<Long> eligibleCatIds = promo.getCategorias().stream()
+                        .map(Categoria::getId)
+                        .collect(java.util.stream.Collectors.toSet());
+                
+                // Calcular subtotal elegible sumando solo los productos de esas categorías
+                BigDecimal subtotalElegible = BigDecimal.ZERO;
+                for (DetalleVenta d : venta.getDetalle()) {
+                    if (d.getProducto() != null && d.getProducto().getCategoria() != null) {
+                        Long catId = d.getProducto().getCategoria().getId();
+                        if (eligibleCatIds.contains(catId)) {
+                            subtotalElegible = subtotalElegible.add(d.getSubtotal() != null ? d.getSubtotal() : BigDecimal.ZERO);
+                        }
+                    }
+                }
+                
+                // Aplicar mínimo y porcentaje sobre la porción elegible
+                if (subtotalElegible.compareTo(promo.getCompraMinima()) >= 0) {
+                    descuento = subtotalElegible.multiply(promo.getPorcentajeDescuento())
+                            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    total = subtotalAcumulado.subtract(descuento);
+                    log.info("Aplicando promoción de categoría '{}': {}% de descuento sobre subtotal elegible {}. Descuento: {}",
+                            promo.getNombre(), promo.getPorcentajeDescuento(), subtotalElegible, descuento);
+                }
+            } else {
+                // Promoción global
+                if (subtotalAcumulado.compareTo(promo.getCompraMinima()) >= 0) {
+                    descuento = subtotalAcumulado.multiply(promo.getPorcentajeDescuento())
+                            .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                    total = subtotalAcumulado.subtract(descuento);
+                    log.info("Aplicando promoción global '{}': {}% de descuento sobre subtotal {}. Descuento: {}",
+                            promo.getNombre(), promo.getPorcentajeDescuento(), subtotalAcumulado, descuento);
+                }
+            }
+        }
+
+        venta.setSubtotal(subtotalAcumulado);
+        venta.setDescuento(descuento);
         venta.setTotal(total);
         if (metodo == Venta.MetodoPago.CREDITO) {
             BigDecimal saldoActual = cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : BigDecimal.ZERO;
