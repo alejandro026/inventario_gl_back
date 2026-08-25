@@ -10,6 +10,7 @@ import com.guerrero.Inventario.repository.CajaTurnoRepository;
 import com.guerrero.Inventario.repository.ClienteRepository;
 import com.guerrero.Inventario.repository.CuentaPorCobrarRepository;
 import com.guerrero.Inventario.repository.VentaRepository;
+import com.guerrero.Inventario.repository.PromocionRepository;
 import com.guerrero.Inventario.security.CurrentUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,8 @@ class VentaServiceTest {
     private CajaTurnoRepository cajaTurnoRepository;
     @Mock
     private CurrentUserProvider currentUserProvider;
+    @Mock
+    private PromocionRepository promocionRepository;
 
     @InjectMocks
     private VentaService service;
@@ -385,5 +388,100 @@ class VentaServiceTest {
         BigDecimal total = service.totalVendido(inicio, fin);
 
         assertThat(total).isEqualByComparingTo("500.00");
+    }
+
+    @Test
+    void registrar_conPromocionGlobal_aplicaDescuento() {
+        when(currentUserProvider.obtenerONull()).thenReturn(usuario);
+        mockTurnoAbierto();
+        when(productoService.buscar(20L)).thenReturn(producto);
+        mockGuardarVenta();
+
+        VentaDTO dto = ventaDtoConDetalle(3); // 3 items * 50.00 = 150.00 subtotal
+        dto.setMetodoPago("EFECTIVO");
+        
+        Promocion promo = Promocion.builder()
+                .id(1L)
+                .nombre("Promo 10%")
+                .compraMinima(new BigDecimal("100.00"))
+                .porcentajeDescuento(new BigDecimal("10.00"))
+                .activa(true)
+                .build();
+                
+        when(promocionRepository.findActivePromotions(any())).thenReturn(List.of(promo));
+
+        VentaDTO resultado = service.registrar(dto);
+
+        assertThat(resultado.getSubtotal()).isEqualByComparingTo("150.00");
+        assertThat(resultado.getDescuento()).isEqualByComparingTo("15.00");
+        assertThat(resultado.getTotal()).isEqualByComparingTo("135.00");
+    }
+
+    @Test
+    void registrar_conPromocionDeCategoria_aplicaDescuentoElegible() {
+        when(currentUserProvider.obtenerONull()).thenReturn(usuario);
+        mockTurnoAbierto();
+        mockGuardarVenta();
+
+        Categoria categoria = new Categoria();
+        categoria.setId(5L);
+        categoria.setNombre("Papeleria");
+        producto.setCategoria(categoria);
+        when(productoService.buscar(20L)).thenReturn(producto);
+        
+        VentaDTO dto = ventaDtoConDetalle(3); // 150.00 subtotal
+        dto.setMetodoPago("EFECTIVO");
+        
+        Promocion promo = Promocion.builder()
+                .id(1L)
+                .nombre("Promo Papeleria 10%")
+                .compraMinima(new BigDecimal("100.00"))
+                .porcentajeDescuento(new BigDecimal("10.00"))
+                .activa(true)
+                .categorias(java.util.Set.of(categoria))
+                .build();
+                
+        when(promocionRepository.findActivePromotions(any())).thenReturn(List.of(promo));
+
+        VentaDTO resultado = service.registrar(dto);
+
+        assertThat(resultado.getSubtotal()).isEqualByComparingTo("150.00");
+        assertThat(resultado.getDescuento()).isEqualByComparingTo("15.00");
+        assertThat(resultado.getTotal()).isEqualByComparingTo("135.00");
+    }
+
+    @Test
+    void registrar_conPromocionDeCategoria_noElegible_noAplicaDescuento() {
+        when(currentUserProvider.obtenerONull()).thenReturn(usuario);
+        mockTurnoAbierto();
+        mockGuardarVenta();
+
+        Categoria categoriaProducto = new Categoria();
+        categoriaProducto.setId(8L);
+        producto.setCategoria(categoriaProducto);
+        when(productoService.buscar(20L)).thenReturn(producto);
+        
+        Categoria categoriaPromo = new Categoria();
+        categoriaPromo.setId(5L);
+        
+        VentaDTO dto = ventaDtoConDetalle(3); // 150.00 subtotal
+        dto.setMetodoPago("EFECTIVO");
+        
+        Promocion promo = Promocion.builder()
+                .id(1L)
+                .nombre("Promo Papeleria 10%")
+                .compraMinima(new BigDecimal("100.00"))
+                .porcentajeDescuento(new BigDecimal("10.00"))
+                .activa(true)
+                .categorias(java.util.Set.of(categoriaPromo))
+                .build();
+                
+        when(promocionRepository.findActivePromotions(any())).thenReturn(List.of(promo));
+
+        VentaDTO resultado = service.registrar(dto);
+
+        assertThat(resultado.getSubtotal()).isEqualByComparingTo("150.00");
+        assertThat(resultado.getDescuento()).isEqualByComparingTo("0.00");
+        assertThat(resultado.getTotal()).isEqualByComparingTo("150.00");
     }
 }
