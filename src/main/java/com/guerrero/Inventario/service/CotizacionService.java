@@ -45,7 +45,7 @@ public class CotizacionService {
         this.currentUserProvider = currentUserProvider;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CotizacionDTO> listarPorSucursal(Long sucursalId) {
         // Ejecutar trigger/expiración lógica en cada consulta de listado para mantener consistencia
         expirarCotizacionesVencidas();
@@ -54,7 +54,7 @@ public class CotizacionService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CotizacionDTO obtenerPorId(Long id) {
         expirarCotizacionesVencidas();
         Cotizacion c = repository.findById(id)
