@@ -34,6 +34,7 @@ public class VentaService {
     private final CajaTurnoRepository cajaTurnoRepository;
     private final CurrentUserProvider currentUserProvider;
     private final PromocionRepository promocionRepository;
+    private final CotizacionService cotizacionService;
 
     public VentaService(VentaRepository ventaRepository,
                         ProductoService productoService,
@@ -43,7 +44,8 @@ public class VentaService {
                         CuentaPorCobrarRepository cuentaPorCobrarRepository,
                         CajaTurnoRepository cajaTurnoRepository,
                         CurrentUserProvider currentUserProvider,
-                        PromocionRepository promocionRepository) {
+                        PromocionRepository promocionRepository,
+                        CotizacionService cotizacionService) {
         this.ventaRepository = ventaRepository;
         this.productoService = productoService;
         this.sucursalService = sucursalService;
@@ -53,6 +55,7 @@ public class VentaService {
         this.cajaTurnoRepository = cajaTurnoRepository;
         this.currentUserProvider = currentUserProvider;
         this.promocionRepository = promocionRepository;
+        this.cotizacionService = cotizacionService;
     }
 
     @Transactional(readOnly = true)
@@ -244,9 +247,17 @@ public class VentaService {
             }
         }
 
+        if (dto.getCotizacionId() != null) {
+            venta.setCotizacionId(dto.getCotizacionId());
+        }
+
         Venta guardada = ventaRepository.save(venta);
         log.info("Venta ID: {} registrada con éxito. Sucursal ID: {}, Cliente ID: {}, Total: {}, Método Pago: {}", 
                 guardada.getId(), guardada.getSucursal().getId(), guardada.getCliente() != null ? guardada.getCliente().getId() : "Público General", guardada.getTotal(), guardada.getMetodoPago());
+
+        if (dto.getCotizacionId() != null) {
+            cotizacionService.registrarVentaLink(dto.getCotizacionId(), guardada.getId());
+        }
 
         // Registrar movimientos en Kardex
         for (DetalleVenta d : guardada.getDetalle()) {
