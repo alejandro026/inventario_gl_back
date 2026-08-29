@@ -43,6 +43,9 @@ public class Venta {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
+    @Column(name = "cotizacion_id")
+    private Long cotizacionId;
+
     @Column(name = "pago_con", precision = 12, scale = 2)
     private BigDecimal pagoCon;
 

@@ -63,4 +63,7 @@ public class VentaDTO {
 
     @Schema(description = "Nombre del cliente asociado (solo lectura)", example = "Juan Pérez")
     private String clienteNombre;
+
+    @Schema(description = "ID de la cotización que originó esta venta (opcional)", example = "10")
+    private Long cotizacionId;
 }

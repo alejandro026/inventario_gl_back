@@ -50,6 +50,8 @@ class VentaServiceTest {
     private CurrentUserProvider currentUserProvider;
     @Mock
     private PromocionRepository promocionRepository;
+    @Mock
+    private CotizacionService cotizacionService;
 
     @InjectMocks
     private VentaService service;
